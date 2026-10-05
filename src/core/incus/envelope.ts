@@ -2,16 +2,13 @@
 import type { IncusError } from '../errors.js';
 import { err, ok, type Result } from '../result.js';
 
-import { isRecord, shortened } from './decode.js';
+import { isOperationPath, isRecord, shortened, userMessage } from './validate.js';
 
 export type Envelope =
     | { readonly kind: 'sync'; readonly metadata: unknown }
     | { readonly kind: 'async'; readonly operation: string; readonly metadata: unknown };
 
 type Decoded<T> = Result<T, IncusError>;
-
-const OPERATION_PATTERN = /^\/1\.0\/operations\/[A-Za-z0-9-]{1,64}$/;
-const MAX_API_MESSAGE_LENGTH = 500;
 
 function isIntegerInRange(value: unknown, min: number, max: number): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
@@ -70,7 +67,7 @@ function decodeAsync(httpStatus: number, json: Record<string, unknown>): Decoded
     }
     const operation = json['operation'];
     // Later requests are built from this path, so reject anything that could alter them.
-    if (typeof operation !== 'string' || !OPERATION_PATTERN.test(operation)) {
+    if (typeof operation !== 'string' || !isOperationPath(operation)) {
         return protocolError(
             `async envelope operation is not /1.0/operations/<id>: ${describe(operation)}`,
         );
@@ -85,8 +82,7 @@ function decodeError(httpStatus: number, json: Record<string, unknown>): Decoded
     }
     const message = json['error'];
     if (typeof message !== 'string') return protocolError('error envelope has no message');
-    // The message reaches UI notifications; cap it.
-    return err({ kind: 'api', code, message: message.slice(0, MAX_API_MESSAGE_LENGTH) });
+    return err({ kind: 'api', code, message: userMessage(message) });
 }
 
 /**
