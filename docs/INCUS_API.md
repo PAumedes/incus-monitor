@@ -136,7 +136,7 @@ Required `api_extensions` (all present in 6.0.x):
 - `instance_state_cpu_time`: `state.cpu.allocated_time`
 - `instance_state_started_at`: `state.started_at`
 
-`core/incus/compat.ts` owns this list. If an extension is missing, the UI shows the "unsupported"
+`core/incus/compat.ts` owns this list. No version string is compared. If an extension is missing, the UI shows the "unsupported"
 state instead of failing halfway. Verify the exact names against `tests/fixtures/incus/*/server.json`
 whenever this list changes.
 
