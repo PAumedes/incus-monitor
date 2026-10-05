@@ -26,19 +26,20 @@ Every Shell or GI API used in `src/` must be listed here with the oldest version
 by reading the GNOME Shell 46 source or by running on 46. Reviewers reject API use that is
 missing from this table.
 
-| API                                                       | Used in      | Since               | Verified on | Notes                                                                 |
-| --------------------------------------------------------- | ------------ | ------------------- | ----------- | --------------------------------------------------------------------- |
-| `Extension` / `ExtensionPreferences` (ESM)                | entry points | 45                  | 50          |                                                                       |
-| `PanelMenu.Button`                                        | ui/indicator | ≤42                 | —           |                                                                       |
-| `PopupMenu.PopupSubMenuMenuItem`, `PopupBaseMenuItem`     | ui/          | ≤42                 | —           |                                                                       |
-| `Main.panel.addToStatusArea`                              | extension.ts | ≤42                 | —           |                                                                       |
-| `Main.notifyError`                                        | ui/          | ≤42                 | —           |                                                                       |
-| `Object.connectObject` / `disconnectObject`               | ui/          | 42                  | —           |                                                                       |
-| `Gio.UnixSocketAddress`, `Gio.SocketClient.connect_async` | adapters/    | ≤2.60               | 50          |                                                                       |
-| `Gio.Subprocess` (`Gio.SubprocessLauncher`)               | adapters/    | ≤2.60               | —           |                                                                       |
-| `St.Clipboard.get_default().set_text`                     | adapters/    | ≤42                 | —           |                                                                       |
-| `Adw.SpinRow`, `Adw.SwitchRow`, `Adw.EntryRow`            | prefs.ts     | Adw 1.4 / 1.4 / 1.2 | —           | GNOME 46 ships libadwaita 1.5                                         |
-| `fillPreferencesWindow()` returning a Promise             | prefs.ts     | 47 awaited          | —           | On 46 the promise is ignored: build synchronously before any `await`. |
+| API                                                       | Used in      | Since               | Verified on | Notes                                                                                               |
+| --------------------------------------------------------- | ------------ | ------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| `Extension` / `ExtensionPreferences` (ESM)                | entry points | 45                  | 50          |                                                                                                     |
+| `PanelMenu.Button`                                        | ui/indicator | ≤42                 | —           |                                                                                                     |
+| `PopupMenu.PopupSubMenuMenuItem`, `PopupBaseMenuItem`     | ui/          | ≤42                 | —           |                                                                                                     |
+| `Main.panel.addToStatusArea`                              | extension.ts | ≤42                 | —           |                                                                                                     |
+| `Main.notifyError`                                        | ui/          | ≤42                 | —           |                                                                                                     |
+| `Object.connectObject` / `disconnectObject`               | ui/          | 42                  | —           |                                                                                                     |
+| `Gio.UnixSocketAddress`, `Gio.SocketClient.connect_async` | adapters/    | ≤2.60               | 50          |                                                                                                     |
+| `Gio.Subprocess` (`Gio.SubprocessLauncher`)               | adapters/    | ≤2.60               | —           |                                                                                                     |
+| `St.Clipboard.get_default().set_text`                     | adapters/    | ≤42                 | —           |                                                                                                     |
+| `Adw.SpinRow`, `Adw.SwitchRow`, `Adw.EntryRow`            | prefs.ts     | Adw 1.4 / 1.4 / 1.2 | —           | GNOME 46 ships libadwaita 1.5                                                                       |
+| `fillPreferencesWindow()` returning a Promise             | prefs.ts     | 47 awaited          | —           | On 46 the promise is ignored: build synchronously before any `await`.                               |
+| `Intl.NumberFormat` (locales, percent style)              | core/format  | ES2015 (ICU)        | GJS 1.88    | Verify on GNOME 46 (GJS 1.80) in the manual matrix. `Intl.DurationFormat` is deliberately not used. |
 
 ## Known version differences
 
