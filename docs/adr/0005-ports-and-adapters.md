@@ -13,12 +13,17 @@ framing, decoding, metrics, scheduling, presentation) does not need GNOME at all
 
 - `src/core/` is pure TypeScript with no `gi://` or `resource://` imports and no GJS globals. It
   runs under Node and is unit-tested to ≥95 % branch coverage.
-- `src/core/ports.ts` defines the interfaces `Transport`, `Clock`, `FileProbe`, `Launcher` and
-  `Clipboard`. `src/adapters/` implements them with Gio/GLib/St and stays thin.
+- `src/core/ports.ts` defines the interfaces `Transport`, `Clock` and `SocketProbe`. `src/adapters/`
+  implements them with Gio/GLib and stays thin; the clipboard needs St and lives in `src/ui/`.
 - `src/ui/` renders view models produced by `core/presenter.ts` and forwards user intents. It
   holds no business logic.
 - `src/extension.ts` is the only place that knows every layer.
 - ESLint `no-restricted-imports` per directory enforces the dependency direction.
+
+Amendment 2026-10-05: the port list above is now `Transport`, `Clock`, `SocketProbe` and `Launch`.
+Terminal detection and argv building moved from `adapters/launcher.ts` to `core/launch.ts`
+because they are pure decisions and belong under Node tests; the adapter keeps only the PATH
+lookup and the spawn.
 
 ## Consequences
 

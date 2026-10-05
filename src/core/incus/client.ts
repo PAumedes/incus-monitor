@@ -5,13 +5,11 @@ import type { HttpRequest } from '../http/request.js';
 import type { Transport } from '../ports.js';
 import { andThen, err, ok, type Result } from '../result.js';
 
+import { ACTIONS, type InstanceAction } from './actions.js';
 import { decodeInstances, decodeOperationResult, decodeServer } from './decode.js';
 import { decodeEnvelope, type Envelope } from './envelope.js';
 import type { Instance, InstanceRef, OperationResult, Server } from './models.js';
 import { isInstanceName, isOperationPath, isProjectName, userMessage } from './validate.js';
-
-const ACTIONS = ['start', 'stop', 'restart', 'freeze', 'unfreeze'] as const;
-export type InstanceAction = (typeof ACTIONS)[number];
 
 /** A running Incus operation; `path` is validated, `project` scopes the wait request. */
 export interface Operation {
@@ -24,6 +22,9 @@ type Outcome<T> = Promise<Result<T, IncusError>>;
 // Request parameters sent to Incus, not client-side timeouts, hence they live here.
 const STATE_TIMEOUT_SECONDS = 30;
 const WAIT_TIMEOUT_SECONDS = 60;
+// The server holds a wait for up to WAIT_TIMEOUT_SECONDS; the transport deadline must outlast it
+// so the server's own timeout answer wins over a local timeout.
+const WAIT_DEADLINE_MARGIN_MS = 5000;
 const OPERATION_SUCCEEDED = 200;
 const OPERATION_FAILED: readonly number[] = [400, 401];
 
@@ -93,7 +94,8 @@ export class IncusClient {
         const project = encodeURIComponent(operation.project);
         const timeout = String(WAIT_TIMEOUT_SECONDS);
         const path = `${operation.path}/wait?timeout=${timeout}&project=${project}`;
-        const request: HttpRequest = { method: 'GET', path };
+        const timeoutMs = WAIT_TIMEOUT_SECONDS * 1000 + WAIT_DEADLINE_MARGIN_MS;
+        const request: HttpRequest = { method: 'GET', path, timeoutMs };
         return this.#sync(request, signal, decodeOperationOutcome);
     }
 

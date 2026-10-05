@@ -47,6 +47,8 @@ Expanded row (`PopupSubMenuMenuItem`):
   project name is shown in dim text only when instances come from more than one project.
 - **Status dot**: an 8 px circle styled by CSS class (`running`, `frozen`, `stopped`, `error`). The
   row's accessible name always includes the state in words.
+- A `busy` instance uses the `frozen` dot and an `unknown` one the `stopped` dot; the status word
+  carries the difference.
 - **Type icon**: `package-x-generic-symbolic` for containers, `computer-symbolic` for VMs.
 - **Readout**: CPU % and memory, for running instances only, in tabular numerals so the columns
   don't jitter.
@@ -59,16 +61,27 @@ Expanded row (`PopupSubMenuMenuItem`):
   | Stopped | Start                                      |
   | Other   | none (transitional states show a busy row) |
 
+  A frozen instance offers Unfreeze and Stop; whether Incus stops a frozen instance gracefully is
+  unverified (see [INCUS_API.md](INCUS_API.md#quirks)).
+
   "Open Shell" becomes "Open Console" for VMs without a running agent.
 
 - **Pending action**: the row's action buttons become insensitive and the dot pulses once per
-  second via CSS transition. No spinners in the panel.
+  second via CSS transition. No spinners in the panel. Pending is a set of row keys, set before
+  the action runs and cleared when it settles whatever the outcome, and pruned of rows that
+  disappeared; several rows can be pending at once. A row the daemon reports as transitional
+  (`busy`) looks the same.
+- **Expansion**: which rows are expanded is remembered per row key and survives re-renders.
+- **Accessibility text**: a missing detail value ("—") is announced as a translated "Not
+  available", and spoken download and upload text comes from a translated template. The
+  instance type is shown by its icon only; the row's accessible name leaves it out.
 - **Failures** raise a single `Main.notifyError(title, incusMessage)`. Nothing modal.
 - **No destructive actions** (delete, rebuild, snapshot restore) in the menu. Ever.
 
 ## Empty and error states
 
-One row, one sentence, at most one action:
+One row, one sentence, at most one action. While loading, the previous menu stays if one was
+already rendered:
 
 | Condition                        | Text                                                  | Action |
 | -------------------------------- | ----------------------------------------------------- | ------ |
@@ -77,6 +90,7 @@ One row, one sentence, at most one action:
 | Daemon not responding            | Incus is not responding                               | Retry  |
 | Unsupported server               | Incus 6.0 or later is required                        | none   |
 | No instances                     | No instances                                          | none   |
+| All instances stopped, hidden    | No running instances                                  | none   |
 
 ## Icons
 
