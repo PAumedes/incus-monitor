@@ -25,3 +25,15 @@ export interface SocketProbe {
 export interface Transport {
     request(request: HttpRequest, signal: CancelSignal): Promise<Result<HttpResponse, IncusError>>;
 }
+
+/**
+ * Time and one-shot timers. Total: scheduling never throws. `setTimeout` returns a function that
+ * cancels the timer. The adapter's callback wrapper must return `GLib.SOURCE_REMOVE`, and the
+ * cancel function must be a no-op once the timer fired or was cancelled, so it never removes a
+ * reused source ID. `now()` is monotonic milliseconds, not wall time.
+ */
+export interface Clock {
+    setTimeout(ms: number, callback: () => void): () => void;
+    /** Milliseconds on a monotonic scale; only differences are meaningful. */
+    now(): number;
+}

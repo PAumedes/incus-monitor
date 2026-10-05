@@ -17,7 +17,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T06 | `core/ports.ts`, `core/incus/client.ts`: IncusClient over a Transport port                                   | T02, T04   | review |
 | T07 | `core/socket.ts`, `core/cancel.ts`: socket discovery over a SocketProbe port, cancellation                   | T01        | review |
 | T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | review |
-| T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | todo   |
+| T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | review |
 | T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | todo   |
 | T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, file probe, launcher, clipboard           | T06, T07   | todo   |
 | T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | todo   |
@@ -120,7 +120,7 @@ Status: `todo` · `in-progress` · `review` · `done`
   on the server, so the monitor just refreshes.
 - Re-runs socket discovery after a connection failure; reads `INCUS_SOCKET` via the composition
   root (`GLib.getenv(...) ?? undefined`).
-- Logs only `detail` from protocol errors, at warn level, at most once per state transition.
+- Logs only `detail` from protocol errors, at warn level, once per failure episode (until the next success).
   Log output is sanitised once at the sink: C0/C1 controls, U+2028/U+2029 and bidi overrides
   are replaced.
 
@@ -128,6 +128,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 
 - Deterministic `ViewModel` (sorting, labels, dot class, actions, readout strings, accessible
   names). Snapshot-tested against builders, not against UI.
+- `unsupported` from `Monitor.perform` carries a non-user string; the presenter maps it to
+  translated text and never shows it raw.
 - `processes < 0` means "not reported": never rendered as a count; it selects "Open Console" for
   VMs.
 
@@ -137,7 +139,10 @@ Status: `todo` · `in-progress` · `review` · `done`
   permission denied, missing socket, cancellation during connect, read and write.
 - The launcher builds argv only. Terminal detection order: setting, `xdg-terminal-exec`,
   `ptyxis`, `kgx`, `gnome-terminal`. Each is unit-tested for argv shape.
-- The clock tracks and removes every source on `dispose()`.
+- The clock tracks and removes every source on `dispose()`. Pitfalls: the callback wrapper
+  returns `SOURCE_REMOVE`; cancel is a no-op after the timer fired or was cancelled (source IDs
+  are reused); `now()` is monotonic.
+- Log sink: the monitor already sanitises its warnings, so the sink must not escape them again.
 - Socket probe (no connect): `query_info_async('standard::type,access::can-write')`.
   NOT_FOUND / NOT_DIRECTORY → `missing`; PERMISSION_DENIED (including an inaccessible parent
   such as a 0700 `/var/lib/incus`) or `can-write = false` → `denied`; not a socket → `missing`;
@@ -156,6 +161,10 @@ Status: `todo` · `in-progress` · `review` · `done`
   crossing 10, 100 or 1000 do not shift the layout. A '—' readout ("not available") gets an
   accessible name that says so. The `Formatter` translates unit templates once at construction, so the UI
   creates it in `enable()` (a language change takes effect on the next enable). The lifecycle checklist in [TESTING.md](TESTING.md#manual-matrix) passes on 50.
+
+- Dispose the `Monitor` last in `disable()`, or inside `try`/`catch`, because
+  `CancelSource.cancel()` rethrows. The monitor reads settings live but a changed socket override
+  needs a new `Monitor`, so settings changes recreate it.
 
 ### T13: Preferences
 

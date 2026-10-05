@@ -28,7 +28,11 @@ into user-facing states, such as "Incus is not installed", which hides them.
   so a faulty adapter cannot stop the rest of a `disable()` teardown.
 - **Ports are total:** they resolve, never reject. Each adapter maps every platform failure to a
   value of the port's result type, and owns logging of unexpected errors. Core code does not
-  wrap port calls in `try`/`catch`.
+  wrap port calls in `try`/`catch`, with one exception: the monitor's two entry points
+  (the polling cycle and `perform`) and the `onSnapshot` consumer callback are guarded and
+  logged once per failure episode, so a contract-breaking port or consumer cannot wedge polling
+  or leave an unhandled rejection. `Clock` and the log are total ports and are not wrapped.
+  Everything else stays unwrapped.
 
 ## Consequences
 

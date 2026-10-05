@@ -54,8 +54,9 @@ toggle, shell updates). The EGO review guidelines are mandatory:
   `Gio.Cancellable`. Core code checks it after every `await` and returns `cancelled`
   ([ADR-0012](adr/0012-cancel-signal-and-total-ports.md)).
 - Ports never reject: adapters map every platform failure to a value of the port's result type.
-- Timeouts are explicit: connect 2 s, request 10 s, operation wait 60 s. Constants live in one
-  place (`core/monitor.ts`).
+- Timeouts are explicit: connect 2 s and request 10 s live in the transport adapter (T11), the
+  operation wait of 60 s in `core/incus/client.ts`, and the polling cadence and back-off in
+  `core/monitor.ts`.
 
 ## 5. Security
 

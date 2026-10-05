@@ -71,7 +71,7 @@ src/
 │   ├── socket.ts           Socket candidate discovery (system socket, incus-user socket).
 │   ├── metrics.ts          CPU %, memory, network rates from successive samples.
 │   ├── format.ts           Human-readable sizes, rates and durations (locale and gettext injected).
-│   ├── monitor.ts          State machine + scheduling: idle/slow vs open/fast cadence, back-off.
+│   ├── monitor.ts          State machine + scheduling (idle/slow vs open/fast cadence, back-off), compat check, socket discovery re-run, `perform`.
 │   └── presenter.ts        Snapshot → ViewModel (sorting, labels, available actions, empty/error states).
 ├── adapters/
 │   ├── gio-transport.ts    Transport over Gio.SocketClient + Gio.UnixSocketAddress, cancellable.
