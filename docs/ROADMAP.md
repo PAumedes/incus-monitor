@@ -8,8 +8,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 
 | ID  | Task                                                                                                         | Depends on | Status |
 | --- | ------------------------------------------------------------------------------------------------------------ | ---------- | ------ |
-| T00 | Repository bootstrap: `git init`, first commit, `make hooks`, GitHub repository, first green Actions run     | —          | todo   |
-| T01 | `core/result.ts`, `core/errors.ts`: Result type and the `IncusError` union                                   | —          | todo   |
+| T00 | Repository bootstrap: `git init`, first commit, `make hooks`, GitHub repository, first green Actions run     | —          | done   |
+| T01 | `core/result.ts`, `core/errors.ts`: Result type and the `IncusError` union                                   | —          | review |
 | T02 | `core/http/request.ts`, `core/http/response.ts`: HTTP/1.1 codec                                              | T01        | todo   |
 | T03 | `core/incus/envelope.ts`: sync / async / error envelopes                                                     | T01        | todo   |
 | T04 | `core/incus/decode.ts`, `models.ts`: Server, Instance, InstanceState decoders against fixtures               | T03        | todo   |

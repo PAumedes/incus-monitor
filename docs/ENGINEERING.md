@@ -106,6 +106,6 @@ A change is done when:
 3. `make test-gjs` passes if `adapters/` changed. Before release, `make incus-ci-all` passes.
 4. The adversarial review ([AGENT_WORKFLOW.md](AGENT_WORKFLOW.md)) has no open blocker or major
    findings.
-5. Docs, ADRs, `CHANGELOG.md` (Unreleased) and the ROADMAP task status are updated in the same
-   merge request.
+5. Docs, ADRs and the ROADMAP task status are updated in the same merge request. The changelog
+   is generated from commit subjects at release time (ADR-0011), so write them for users.
 6. A UI change was exercised in a nested shell on GNOME 50, and on GNOME 46 before release.

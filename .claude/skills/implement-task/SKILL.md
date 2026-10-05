@@ -73,7 +73,8 @@ findings and your assessment.
 1. Apply accepted minors through the implementer as a separate refactoring pass (the
    `refactoring` skill: no behaviour change, tests unchanged), then run checks once more.
 2. Make sure docs reflect reality: ARCHITECTURE module map, COMPATIBILITY ledger, INCUS_API, a
-   new ADR if a significant decision was made, and `CHANGELOG.md` under Unreleased.
+   new ADR if a significant decision was made. Propose a user-facing Conventional Commit subject
+   (the changelog is generated from commits, ADR-0011).
 3. Set the task status to `review` in ROADMAP.md. The maintainer sets `done` when merging.
 4. Give the user a short report: what was built, the tests added, the findings (fixed, dropped
    as unverifiable, rebutted), and anything that needs a human decision. Do not commit.
