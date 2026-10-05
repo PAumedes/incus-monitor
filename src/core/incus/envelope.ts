@@ -2,6 +2,8 @@
 import type { IncusError } from '../errors.js';
 import { err, ok, type Result } from '../result.js';
 
+import { isRecord, shortened } from './decode.js';
+
 export type Envelope =
     | { readonly kind: 'sync'; readonly metadata: unknown }
     | { readonly kind: 'async'; readonly operation: string; readonly metadata: unknown };
@@ -10,11 +12,6 @@ type Decoded<T> = Result<T, IncusError>;
 
 const OPERATION_PATTERN = /^\/1\.0\/operations\/[A-Za-z0-9-]{1,64}$/;
 const MAX_API_MESSAGE_LENGTH = 500;
-const MAX_QUOTED_LENGTH = 40;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function isIntegerInRange(value: unknown, min: number, max: number): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
@@ -32,11 +29,6 @@ function protocolError(detail: string): Decoded<never> {
     return err({ kind: 'protocol', detail });
 }
 
-function replaceControl(char: string): string {
-    const code = char.charCodeAt(0);
-    return code < 0x20 || code === 0x7f ? '?' : char;
-}
-
 /**
  * Renders a daemon-supplied value for a log line: short and single-line, so a hostile body
  * cannot flood the log or forge entries.
@@ -46,8 +38,7 @@ function describe(value: unknown): string {
         return String(value);
     }
     if (typeof value === 'string') {
-        const shown = Array.from(value.slice(0, MAX_QUOTED_LENGTH), replaceControl).join('');
-        return `"${shown}"${value.length > MAX_QUOTED_LENGTH ? '...' : ''}`;
+        return `"${shortened(value)}"`;
     }
     return typeof value;
 }
@@ -58,8 +49,9 @@ function statusMismatch(
     codeField: string,
     code: unknown,
 ): Decoded<never> {
+    const http = String(httpStatus);
     return protocolError(
-        `${type} envelope has invalid status (HTTP ${String(httpStatus)}, ${codeField} ${describe(code)})`,
+        `${type} envelope has invalid status (HTTP ${http}, ${codeField} ${describe(code)})`,
     );
 }
 

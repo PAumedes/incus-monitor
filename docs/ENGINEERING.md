@@ -50,8 +50,10 @@ toggle, shell updates). The EGO review guidelines are mandatory:
   `GLib.spawn_sync`, no `GLib.file_get_contents`.
 - One request in flight per poll stream. A slow daemon must not pile up requests: the next poll is
   scheduled only after the previous one settles.
-- Every async operation accepts a `Gio.Cancellable` (adapters) or an `AbortSignal`-like token
-  (core ports) and honours it promptly.
+- Every async operation takes a `CancelSignal` (`core/cancel.ts`); adapters bridge it to a
+  `Gio.Cancellable`. Core code checks it after every `await` and returns `cancelled`
+  ([ADR-0012](adr/0012-cancel-signal-and-total-ports.md)).
+- Ports never reject: adapters map every platform failure to a value of the port's result type.
 - Timeouts are explicit: connect 2 s, request 10 s, operation wait 60 s. Constants live in one
   place (`core/monitor.ts`).
 
