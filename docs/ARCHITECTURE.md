@@ -56,7 +56,8 @@ src/
 ├── core/
 │   ├── result.ts           Result<T, E> and helpers. No exceptions cross module boundaries.
 │   ├── errors.ts           IncusError: a tagged union of every failure the UI can explain.
-│   ├── ports.ts            Interfaces implemented by adapters: Transport, Clock, FileProbe, Launcher, Clipboard.
+│   ├── cancel.ts           CancelSignal / CancelSource: cancellation without AbortController (absent in GJS).
+│   ├── ports.ts            Interfaces implemented by adapters: SocketProbe, Transport, Clock, Launcher, Clipboard.
 │   ├── http/
 │   │   ├── request.ts      Serialise an HTTP/1.1 request (Host, Connection: close, JSON body).
 │   │   └── response.ts     Parse an HTTP/1.1 response: status, headers, Content-Length, chunked.
@@ -75,7 +76,7 @@ src/
 │   ├── gio-transport.ts    Transport over Gio.SocketClient + Gio.UnixSocketAddress, cancellable.
 │   ├── glib-clock.ts       Clock over GLib.timeout_add; every source is tracked and removable.
 │   ├── settings.ts         Typed GSettings wrapper with change subscription.
-│   ├── file-probe.ts       Gio-based existence and permission checks for socket discovery.
+│   ├── socket-probe.ts     Classifies socket paths (missing / denied / usable) with Gio, without connecting.
 │   ├── launcher.ts         Terminal detection and Gio.Subprocess spawn (argv only, never a shell string).
 │   └── clipboard.ts        St.Clipboard write (explicit user action only).
 └── ui/
@@ -121,3 +122,4 @@ Recorded as ADRs in [`docs/adr/`](adr/README.md):
 - [ADR-0009](adr/0009-incus-for-reproducible-local-builds.md): Incus for clean local builds and desktop VMs.
 - [ADR-0010](adr/0010-distribution-deb-and-ppa.md): one build for all series; zip, .deb, private PPA.
 - [ADR-0011](adr/0011-release-from-conventional-commits.md): changelog and versions from commits.
+- [ADR-0012](adr/0012-cancel-signal-and-total-ports.md): core cancellation signal; ports never reject.

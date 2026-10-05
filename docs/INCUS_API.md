@@ -5,14 +5,18 @@ use, plus the behaviour we observed against real servers (fixtures in `tests/fix
 
 ## Sockets
 
-Discovery order (the first one that is connectable wins; the decision is re-evaluated after a
-failure):
+Discovery (`core/socket.ts`) classifies each candidate path without connecting. The first usable
+one wins. A non-empty override, which the composition root reads from `INCUS_SOCKET`, is the only
+candidate, as with the `incus` CLI. Otherwise the system socket comes before the user socket.
+With no usable candidate, the result is `permission-denied` if any candidate exists but is
+inaccessible (including an inaccessible parent directory), and `not-installed` otherwise. The
+monitor re-runs discovery after a connection failure.
 
-| Order | Path                              | Who can use it           | Notes                                                                     |
-| ----- | --------------------------------- | ------------------------ | ------------------------------------------------------------------------- |
-| 1     | `$INCUS_SOCKET`                   | whoever set it           | Honoured for parity with the CLI. Rarely set in a Shell session.          |
-| 2     | `/var/lib/incus/unix.socket`      | members of `incus-admin` | Full access, all projects.                                                |
-| 3     | `/var/lib/incus/unix.socket.user` | members of `incus`       | `incus-user` daemon: restricted to the user's own project (`user-<uid>`). |
+| Order    | Path                              | Who can use it           | Notes                                                                     |
+| -------- | --------------------------------- | ------------------------ | ------------------------------------------------------------------------- |
+| override | `$INCUS_SOCKET`                   | whoever set it           | Replaces the list when set, as in the CLI. Rarely set in a Shell session. |
+| 1        | `/var/lib/incus/unix.socket`      | members of `incus-admin` | Full access, all projects.                                                |
+| 2        | `/var/lib/incus/unix.socket.user` | members of `incus`       | `incus-user` daemon: restricted to the user's own project (`user-<uid>`). |
 
 Both sockets are **systemd socket-activated** (`incus.socket`, `incus-user.socket`). Connecting
 starts the daemon if it is stopped. This is acceptable, because the user installed Incus, but it
@@ -97,20 +101,31 @@ explicitly on per-instance calls.
 
 ## Fields we read
 
-| Field                                 | Use                                                                     |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| `name`, `project`, `type`             | Identity, icon                                                          |
-| `status_code`                         | State (authoritative). `status` is display-only and localisation-prone. |
-| `state.cpu.usage` (ns, cumulative)    | CPU %: Δusage / (Δt × allocated_time) × 100                             |
-| `state.cpu.allocated_time` (ns per s) | Number of allocated CPUs × 1e9. Requires `instance_state_cpu_time`.     |
-| `state.memory.usage`, `.total`        | Memory readout; `total` is the limit or the host total                  |
-| `state.network.<iface>.counters`      | Rx/Tx rates; skip `loopback` type                                       |
-| `state.network.<iface>.addresses[]`   | Primary address: first `global` scope, IPv4 preferred                   |
-| `state.processes`                     | `-1` on a VM means no agent → "Open Console"                            |
-| `state.started_at`                    | Uptime                                                                  |
+| Field                                 | Use                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
+| `name`, `project`, `type`             | Identity, icon                                                                        |
+| `status_code`                         | State (authoritative). `status` is display-only and localisation-prone.               |
+| `state.cpu.usage` (ns, cumulative)    | CPU %: Δusage / (Δt × allocated_time) × 100                                           |
+| `state.cpu.allocated_time` (ns per s) | Number of allocated CPUs × 1e9. Requires `instance_state_cpu_time`. 0 = not reported. |
+| `state.memory.usage`, `.total`        | Memory readout; `total` is the limit or the host total (0 = not reported)             |
+| `state.network.<iface>.counters`      | Rx/Tx rates; skip `loopback` type                                                     |
+| `state.network.<iface>.addresses[]`   | Primary address: first `global` scope, IPv4 preferred                                 |
+| `state.processes`                     | `-1` on a VM means no agent → "Open Console"; absent is treated as `-1`               |
+| `state.started_at`                    | Uptime                                                                                |
 
-Status codes we care about: `103` Running, `102` Stopped, `110` Frozen, `111` Thawed, plus
-transitional `101`, `104`–`109`. Anything else maps to `unknown` and offers no actions.
+Status mapping (`core/incus/decode.ts`): `103` Running and `113` Ready → running; `102` →
+stopped; `110` → frozen; `112` → error; `101`, `104`–`109` and `111` (Thawed, only seen briefly
+after an unfreeze) → busy; any other integer → unknown, which offers no actions.
+
+Decoding rules: unknown fields are ignored; inside `state`, absent or null pieces read as zero
+or empty, while a present value of the wrong type is a `decode` error naming its JSON path.
+Instance names follow the Incus rules exactly (1–63 ASCII letters, digits and dashes, starting
+with a letter, not ending with a dash). Project names follow
+the Incus rules (`projectValidateName` and `validate.IsAPIName`): at most 64 bytes, starting and
+ending with an ASCII letter or digit, no whitespace and none of `$ ? & + " ' \` * / _`. On top of
+that we reject Unicode control and format characters (`\p{C}`: bidi overrides, zero-width
+characters, lone surrogates), which could spoof labels or forge log lines. Daemon values that
+appear in error paths or details are shortened and have the same character classes replaced.
 
 ## Compatibility gate
 
