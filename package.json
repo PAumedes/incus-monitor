@@ -1,0 +1,34 @@
+{
+    "name": "incus-monitor",
+    "version": "0.1.0",
+    "private": true,
+    "description": "GNOME Shell extension to monitor and control local Incus containers and virtual machines",
+    "license": "GPL-2.0-or-later",
+    "type": "module",
+    "engines": {
+        "node": ">=22.13.0"
+    },
+    "scripts": {
+        "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json --noEmit && tsc -p tsconfig.gjs.json --noEmit",
+        "lint": "eslint --max-warnings=0 .",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@girs/gjs": "5.5.0",
+        "@girs/gnome-shell": "50.0.4",
+        "@types/node": "22.20.5",
+        "@vitest/coverage-v8": "5.0.3",
+        "eslint": "10.12.0",
+        "eslint-config-prettier": "10.1.8",
+        "globals": "17.13.0",
+        "prettier": "3.9.9",
+        "typescript": "6.0.3",
+        "typescript-eslint": "8.71.0",
+        "vitest": "5.0.3"
+    }
+}

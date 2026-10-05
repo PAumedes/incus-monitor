@@ -1,0 +1,9 @@
+{
+    // Integration tests run under GJS against core/ and adapters/ (no Shell, no GTK).
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        "outDir": "./build/gjs"
+    },
+    "include": ["ambient.d.ts", "src/core/**/*.ts", "src/adapters/**/*.ts", "tests/gjs/**/*.ts"]
+}

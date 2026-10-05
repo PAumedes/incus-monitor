@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# GitLab pipeline: same steps as .github/workflows/ and `make incus-ci`.
+#
+# NOT CONFIGURED YET. GitHub Actions is used until the self-hosted GitLab runner exists.
+# When it does:
+#   1. Set `default.tags` to the runner's tags (or remove it for untagged runners).
+#   2. Make sure the runner can pull `ubuntu:24.04` and `ubuntu:26.04`, or mirror them and change
+#      UBUNTU_REGISTRY.
+#   3. Protect tags matching v*.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+
+stages:
+  - ci
+  - release
+
+variables:
+  UBUNTU_REGISTRY: ubuntu
+
+default:
+  interruptible: true
+  # tags: [incus-monitor]   # set to the self-hosted runner tags
+
+ci:
+  stage: ci
+  image: $UBUNTU_REGISTRY:$UBUNTU
+  parallel:
+    matrix:
+      - UBUNTU: ['24.04', '26.04']
+  before_script:
+    - scripts/ci/provision.sh
+  script:
+    - make ci
+  coverage: '/^Lines\s*:\s*([\d.]+)%/'
+  artifacts:
+    when: always
+    expire_in: 1 month
+    paths:
+      - build/*.zip
+      - build/*.deb
+    reports:
+      junit: build/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: build/coverage/cobertura-coverage.xml
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: ci
+      parallel:
+        matrix:
+          - UBUNTU: '24.04'
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+  script:
+    - apk add --no-cache python3
+    - python3 scripts/release.py --notes "$CI_COMMIT_TAG" > release-notes.md
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: 'Incus Monitor $CI_COMMIT_TAG'
+    description: release-notes.md

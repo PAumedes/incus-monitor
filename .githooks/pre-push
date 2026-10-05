@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Full local gate before code leaves the machine. `make incus-ci` runs the exact CI environment.
+set -euo pipefail
+
+make --no-print-directory check test-gjs build
