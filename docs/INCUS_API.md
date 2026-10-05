@@ -33,21 +33,32 @@ They stay separate kinds so that logs say which one happened.
 
 ## HTTP over the socket
 
-We speak HTTP/1.1 directly on a `Gio.SocketConnection` (see [ADR-0003](adr/0003-raw-http-over-gio-unix-socket.md)):
+We speak HTTP/1.1 directly on a `Gio.SocketConnection` (see [ADR-0003](adr/0003-raw-http-over-gio-unix-socket.md)).
+The codec is `core/http/request.ts` and `core/http/response.ts`.
 
 ```http
 GET /1.0/instances?all-projects=true&recursion=1 HTTP/1.1
 Host: incus
 Accept: application/json
-User-Agent: incus-monitor/<version>
+User-Agent: incus-monitor
 Connection: close
 ```
 
-- One connection per request, with `Connection: close`. The body ends at `Content-Length`, at
-  the end of chunked encoding, or at EOF, in that order of preference.
-- Request bodies are JSON with `Content-Type: application/json` and an explicit `Content-Length`.
-- The response parser must handle `Transfer-Encoding: chunked`, because Incus uses it for large
-  recursion responses.
+- One connection per request, with `Connection: close`. Request bodies are JSON with
+  `Content-Type: application/json` and a `Content-Length` in UTF-8 bytes.
+- The request path must be printable ASCII without spaces. Callers percent-encode names first;
+  anything else is a programmer error and `encodeRequest` throws.
+- Incus answers with `Transfer-Encoding: chunked`, even for small bodies, so chunked framing is
+  the main path. `Content-Length` and read-to-EOF are also supported. Chunked wins when both are
+  present.
+- The parser is incremental and binary-safe, and it is strict: CRLF line endings only, a 3-digit
+  status in 100–599, digits-only `Content-Length` (conflicting duplicates rejected), hex-only
+  chunk sizes, and `Transfer-Encoding` must be exactly `chunked` (any letter case).
+- Limits, enforced as soon as they are exceeded: header section 64 KiB, chunk-size line and
+  trailer section 64 KiB each, body 32 MiB (including declared lengths). Violations are
+  `protocol` errors.
+- Trailers are skipped, not validated (only their size counts). Interim 1xx responses are not
+  supported: Incus never sends them, because we send no `Expect` header.
 
 ## Envelopes
 
