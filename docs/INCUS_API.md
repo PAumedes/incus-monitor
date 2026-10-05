@@ -5,14 +5,18 @@ use, plus the behaviour we observed against real servers (fixtures in `tests/fix
 
 ## Sockets
 
-Discovery order (the first one that is connectable wins; the decision is re-evaluated after a
-failure):
+Discovery (`core/socket.ts`) classifies each candidate path without connecting. The first usable
+one wins. A non-empty override, which the composition root reads from `INCUS_SOCKET`, is the only
+candidate, as with the `incus` CLI. Otherwise the system socket comes before the user socket.
+With no usable candidate, the result is `permission-denied` if any candidate exists but is
+inaccessible (including an inaccessible parent directory), and `not-installed` otherwise. The
+monitor re-runs discovery after a connection failure.
 
-| Order | Path                              | Who can use it           | Notes                                                                     |
-| ----- | --------------------------------- | ------------------------ | ------------------------------------------------------------------------- |
-| 1     | `$INCUS_SOCKET`                   | whoever set it           | Honoured for parity with the CLI. Rarely set in a Shell session.          |
-| 2     | `/var/lib/incus/unix.socket`      | members of `incus-admin` | Full access, all projects.                                                |
-| 3     | `/var/lib/incus/unix.socket.user` | members of `incus`       | `incus-user` daemon: restricted to the user's own project (`user-<uid>`). |
+| Order    | Path                              | Who can use it           | Notes                                                                     |
+| -------- | --------------------------------- | ------------------------ | ------------------------------------------------------------------------- |
+| override | `$INCUS_SOCKET`                   | whoever set it           | Replaces the list when set, as in the CLI. Rarely set in a Shell session. |
+| 1        | `/var/lib/incus/unix.socket`      | members of `incus-admin` | Full access, all projects.                                                |
+| 2        | `/var/lib/incus/unix.socket.user` | members of `incus`       | `incus-user` daemon: restricted to the user's own project (`user-<uid>`). |
 
 Both sockets are **systemd socket-activated** (`incus.socket`, `incus-user.socket`). Connecting
 starts the daemon if it is stopped. This is acceptable, because the user installed Incus, but it

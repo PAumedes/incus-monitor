@@ -17,3 +17,4 @@ Start from [`0000-template.md`](0000-template.md).
 | [0009](0009-incus-for-reproducible-local-builds.md) | Incus for reproducible local builds and test VMs            | Accepted |
 | [0010](0010-distribution-deb-and-ppa.md)            | Distribution as a .deb, with a private PPA for production   | Accepted |
 | [0011](0011-release-from-conventional-commits.md)   | Releases and changelogs generated from Conventional Commits | Accepted |
+| [0012](0012-cancel-signal-and-total-ports.md)       | Core cancellation signal and ports that never reject        | Accepted |
