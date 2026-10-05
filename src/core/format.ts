@@ -2,7 +2,7 @@
 
 export type Translate = (msgid: string) => string;
 
-const DASH = '—';
+export const DASH = '—';
 const FALLBACK_LOCALE = 'en';
 const SI_BASE = 1000;
 const MINUTE_MS = 60_000;
@@ -10,7 +10,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 /** GLib reports locales like `de_DE.UTF-8@euro`; Intl wants BCP 47 and rejects the rest. */
-function intlLocale(locale: string): string {
+export function intlLocale(locale: string): string {
     const tag = (locale.split(/[.@:]/, 1)[0] ?? '').replace(/_/g, '-');
     if (tag === '' || tag === 'C' || tag === 'POSIX') return FALLBACK_LOCALE;
     try {

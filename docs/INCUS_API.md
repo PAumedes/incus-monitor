@@ -153,3 +153,5 @@ for project \"default\""` (fixture `6.0/error-forbidden-project.json`). Always u
 - `started_at` is RFC 3339 with nanoseconds and a numeric offset. `Date.parse` truncates to
   milliseconds, which is fine.
 - Network interface `addresses` on loopback must be ignored when choosing the primary address.
+- **To verify in the manual matrix (T16)**: a graceful `stop` of a frozen instance. The menu
+  offers it, but it must be checked on a throwaway instance you created yourself.

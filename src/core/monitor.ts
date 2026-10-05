@@ -2,8 +2,9 @@
 import { CancelSource, isCancelled, type CancelSignal } from './cancel.js';
 import type { IncusError } from './errors.js';
 import { checkCompat } from './incus/compat.js';
-import type { IncusClient, InstanceAction } from './incus/client.js';
-import type { Instance, InstanceRef, InstanceStatus } from './incus/models.js';
+import { isActionAvailable, type InstanceAction } from './incus/actions.js';
+import type { IncusClient } from './incus/client.js';
+import { instanceKey, type Instance, type InstanceRef } from './incus/models.js';
 import { userMessage } from './incus/validate.js';
 import type { Clock, SocketProbe } from './ports.js';
 import { err, ok, type Result } from './result.js';
@@ -50,15 +51,6 @@ const CONNECTION_FAILURES: readonly IncusError['kind'][] = [
     'timeout',
 ];
 
-// The only status each action may start from.
-const REQUIRED_STATUS: Readonly<Record<InstanceAction, InstanceStatus>> = {
-    start: 'stopped',
-    stop: 'running',
-    restart: 'running',
-    freeze: 'running',
-    unfreeze: 'frozen',
-};
-
 type Outcome<T> = Result<T, IncusError>;
 
 const BROKEN_CONTRACT = 'a port broke its contract';
@@ -74,8 +66,6 @@ const describeThrown = (thrown: unknown): string => {
 };
 
 const cancelled = (): Outcome<never> => err({ kind: 'cancelled' });
-
-const refKey = (ref: InstanceRef): string => `${ref.project}/${ref.name}`;
 
 export class Monitor {
     readonly #source = new CancelSource();
@@ -123,7 +113,7 @@ export class Monitor {
 
     /** Resolves after the refresh that follows the action, so callers see the new state. */
     perform(action: InstanceAction, ref: InstanceRef): Promise<Outcome<true>> {
-        const key = refKey(ref);
+        const key = instanceKey(ref);
         const previous = this.#queues.get(key) ?? Promise.resolve();
         const run = previous.then(() => this.#guardedPerform(action, ref));
         const tail = run.then(() => undefined);
@@ -158,7 +148,7 @@ export class Monitor {
     async #perform(action: InstanceAction, ref: InstanceRef): Promise<Outcome<true>> {
         const client = this.#client;
         const target = this.#known().find(i => i.project === ref.project && i.name === ref.name);
-        if (target === undefined || !client || target.status !== REQUIRED_STATUS[action]) {
+        if (target === undefined || !client || !isActionAvailable(action, target.status)) {
             const reason = `${action} is not available for this instance`;
             return err({ kind: 'unsupported', reason });
         }

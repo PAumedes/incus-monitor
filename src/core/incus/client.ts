@@ -5,13 +5,11 @@ import type { HttpRequest } from '../http/request.js';
 import type { Transport } from '../ports.js';
 import { andThen, err, ok, type Result } from '../result.js';
 
+import { ACTIONS, type InstanceAction } from './actions.js';
 import { decodeInstances, decodeOperationResult, decodeServer } from './decode.js';
 import { decodeEnvelope, type Envelope } from './envelope.js';
 import type { Instance, InstanceRef, OperationResult, Server } from './models.js';
 import { isInstanceName, isOperationPath, isProjectName, userMessage } from './validate.js';
-
-const ACTIONS = ['start', 'stop', 'restart', 'freeze', 'unfreeze'] as const;
-export type InstanceAction = (typeof ACTIONS)[number];
 
 /** A running Incus operation; `path` is validated, `project` scopes the wait request. */
 export interface Operation {

@@ -18,7 +18,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T07 | `core/socket.ts`, `core/cancel.ts`: socket discovery over a SocketProbe port, cancellation                   | T01        | review |
 | T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | review |
 | T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | review |
-| T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | todo   |
+| T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | review |
 | T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, file probe, launcher, clipboard           | T06, T07   | todo   |
 | T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | todo   |
 | T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | todo   |
@@ -132,6 +132,9 @@ Status: `todo` · `in-progress` · `review` · `done`
   translated text and never shows it raw.
 - `processes < 0` means "not reported": never rendered as a count; it selects "Open Console" for
   VMs.
+- The presenter returns plain data; `Sampler.record(snapshot)` runs before `present(snapshot)`.
+  `performFailureTitle` and `performFailureMessage` give the notification text of a failed
+  action; a null message means nothing is shown.
 
 ### T11: Adapters
 
@@ -166,6 +169,30 @@ Status: `todo` · `in-progress` · `review` · `done`
   `CancelSource.cancel()` rethrows. The monitor reads settings live but a changed socket override
   needs a new `Monitor`, so settings changes recreate it.
 
+- Owns the pending-action state: action buttons insensitive and the dot pulsing, keyed by
+  `Row.key`. Calls `Sampler.record` before `present` on each snapshot.
+  - Pending is a set of `Row.key`: a key is added before `Monitor.perform` and removed when it
+    settles, whatever the outcome, and keys absent from the rows are pruned on each render.
+    Several rows may be pending at once. `Row.busy` (a transitional state reported by the daemon)
+    looks the same: the dot pulses and no actions are offered.
+  - Expansion state of rows is keyed by `Row.key` and survives re-renders.
+  - A `loading` view model keeps the previously rendered menu if there is one. The monitor never
+    emits `failed:cancelled` after `ready`, so this is a defensive rule.
+  - Accessible text is built from translated templates, never by concatenating sentences. `DASH`
+    in the details is announced as a translated "Not available", and the spoken download and
+    upload text uses a translated template. The instance type is conveyed by the icon only: the
+    row's accessible name does not need it.
+  - Deferred: `PresentContext` carries `locale` next to `formatter`; collapse them into one locale
+    object when this task builds the context. If the UI grows `explain` or `performFailure*`,
+    consider moving them to `core/failure-text.ts`.
+- Owns the detail headings and their translations (Memory, Network, Address, Uptime), the Retry,
+  Refresh and Preferences buttons, the accessible name of the copy-address button, and the
+  spoken download and upload text for the rates.
+- Shows only the footer for a `loading` view model.
+- No markup in St labels (`use_markup` off) or in notification bodies: names and Incus messages
+  are untrusted text.
+- Raises failures with `performFailureTitle` and `performFailureMessage`.
+
 ### T13: Preferences
 
 - Four rows bound with `Gio.Settings.bind` where possible. No Shell imports (lint).
@@ -175,3 +202,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 - Launch Incus 7.0 in an Incus VM (Zabbly `stable` repository), create a container, a VM, a
   stopped and a frozen instance, and run `scripts/record-fixtures.py --version 7.0`. Every
   decoder test runs against both series (`describe.each`).
+
+### T16: Manual matrix
+
+- Stop on a frozen instance: run it on a throwaway instance you created, and confirm that the
+  graceful stop succeeds or that Incus reports an error the notification shows.

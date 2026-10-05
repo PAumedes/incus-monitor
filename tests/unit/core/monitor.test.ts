@@ -508,7 +508,7 @@ describe('Monitor perform', () => {
             ['frozen', 'start', false],
             ['running', 'stop', true],
             ['stopped', 'stop', false],
-            ['frozen', 'stop', false],
+            ['frozen', 'stop', true],
             ['running', 'restart', true],
             ['stopped', 'restart', false],
             ['running', 'freeze', true],

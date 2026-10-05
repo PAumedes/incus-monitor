@@ -25,6 +25,9 @@ export interface InstanceState {
     readonly primaryAddress: string | null;
 }
 
+/** Stable identity of an instance across projects. */
+export const instanceKey = (ref: InstanceRef): string => `${ref.project}/${ref.name}`;
+
 export interface Instance extends InstanceRef {
     readonly type: InstanceType;
     readonly status: InstanceStatus;
