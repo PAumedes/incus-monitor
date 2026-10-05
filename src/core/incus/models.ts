@@ -36,3 +36,9 @@ export interface Server {
     readonly version: string;
     readonly apiExtensions: ReadonlySet<string>;
 }
+
+/** The parts of an operation's final metadata the client acts on. `error` is "" on success. */
+export interface OperationResult {
+    readonly statusCode: number;
+    readonly error: string;
+}

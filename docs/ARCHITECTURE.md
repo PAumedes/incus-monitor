@@ -65,6 +65,7 @@ src/
 │   │   ├── envelope.ts     Decode sync / async / error envelopes.
 │   │   ├── models.ts       Validated domain types: Server, Instance, InstanceState.
 │   │   ├── decode.ts       Hand-written decoders from unknown JSON (no runtime deps).
+│   │   ├── validate.ts     Name and path validators, text sanitisers shared by decoders and client.
 │   │   ├── compat.ts       Required api_extensions and supported server versions.
 │   │   └── client.ts       IncusClient: server info, list instances, change state, wait for an operation.
 │   ├── socket.ts           Socket candidate discovery (system socket, incus-user socket).
