@@ -1,0 +1,20 @@
+Source: gnome-shell-extension-incus-monitor
+Section: gnome
+Priority: optional
+Maintainer: Patricio Aumedes <patricioaumedes@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/PAumedes/incus-monitor
+Rules-Requires-Root: no
+
+Package: gnome-shell-extension-incus-monitor
+Architecture: all
+Depends: ${misc:Depends}, gnome-shell (>= 46)
+Recommends: incus
+Description: GNOME Shell extension to monitor and control Incus instances
+ Shows the local Incus containers and virtual machines in the top bar with
+ their state and resource usage, and lets the user start, stop, restart,
+ freeze or open a shell in an instance.
+ .
+ The extension talks only to the local Incus unix socket and writes to the
+ clipboard only when the user chooses "Copy address".

@@ -1,0 +1,10 @@
+{
+    // Unit tests run under Node: only the platform-agnostic core is visible here.
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        "outDir": "./build/tests",
+        "types": ["node"]
+    },
+    "include": ["src/core/**/*.ts", "tests/unit/**/*.ts", "vitest.config.ts"]
+}

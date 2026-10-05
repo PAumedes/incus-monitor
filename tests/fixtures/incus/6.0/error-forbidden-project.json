@@ -1,0 +1,13 @@
+{
+  "request": "/1.0/instances?recursion=1",
+  "http_status": 500,
+  "body": {
+    "type": "error",
+    "status": "",
+    "status_code": 0,
+    "operation": "",
+    "error_code": 500,
+    "error": "User does not have permissions for project \"default\"",
+    "metadata": null
+  }
+}

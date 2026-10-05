@@ -1,0 +1,9 @@
+{
+    "uuid": "incus-monitor@patricioaumedes",
+    "name": "Incus Monitor",
+    "description": "Monitor and control local Incus containers and virtual machines from the top bar.\n\nShows instance state and resource usage, and lets you start, stop, restart, freeze or open a shell in an instance.\n\nThis extension writes to the clipboard only when you choose \"Copy address\".",
+    "shell-version": ["46", "47", "48", "49", "50"],
+    "url": "https://github.com/PAumedes/incus-monitor",
+    "settings-schema": "org.gnome.shell.extensions.incus-monitor",
+    "gettext-domain": "incus-monitor@patricioaumedes"
+}

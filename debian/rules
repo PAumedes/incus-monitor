@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Installs the prebuilt extension tree from dist/ (`make build`). Build hosts such as Launchpad
+# have no network access for the Node toolchain: see docs/adr/0010-distribution-deb-and-ppa.md.
+
+PKG  := gnome-shell-extension-incus-monitor
+UUID := $(shell sed -n 's/^ *"uuid": *"\([^"]*\)".*/\1/p' dist/metadata.json)
+DEST := debian/$(PKG)/usr/share/gnome-shell/extensions/$(UUID)
+
+%:
+	dh $@
+
+override_dh_auto_clean override_dh_auto_configure override_dh_auto_test:
+
+override_dh_auto_build:
+	test -f dist/metadata.json || { echo "dist/ is missing: run 'make build' first" >&2; exit 1; }
+
+# System-wide installs read schemas and translations from the standard system locations.
+override_dh_auto_install:
+	install -d $(DEST)
+	cp -r dist/. $(DEST)/
+	rm -rf $(DEST)/schemas $(DEST)/locale
+	install -D -m 0644 -t debian/$(PKG)/usr/share/glib-2.0/schemas data/schemas/*.gschema.xml
+	if [ -d dist/locale ]; then cp -r dist/locale debian/$(PKG)/usr/share/; fi

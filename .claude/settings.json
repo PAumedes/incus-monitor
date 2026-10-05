@@ -1,0 +1,41 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(make check:*)",
+            "Bash(make lint:*)",
+            "Bash(make test:*)",
+            "Bash(make test-gjs:*)",
+            "Bash(make build:*)",
+            "Bash(make zip:*)",
+            "Bash(make format:*)",
+            "Bash(make changelog-preview:*)",
+            "Bash(make incus-ci:*)",
+            "Bash(make incus-ci-all:*)",
+            "Bash(make incus-package:*)",
+            "Bash(npm test:*)",
+            "Bash(npm run typecheck:*)",
+            "Bash(npm run lint:*)",
+            "Bash(npx vitest:*)",
+            "Bash(npx tsc:*)",
+            "Bash(npx eslint:*)",
+            "Bash(git diff:*)",
+            "Bash(git status:*)",
+            "Bash(git log:*)",
+            "Bash(unzip -l:*)",
+            "Bash(dpkg -c:*)",
+            "Bash(dpkg -I:*)"
+        ],
+        "deny": [
+            "Bash(make release:*)",
+            "Bash(scripts/release.py --bump:*)",
+            "Bash(scripts/release.py --version:*)",
+            "Bash(git push:*)",
+            "Bash(git tag:*)",
+            "Bash(dput:*)",
+            "Bash(gnome-extensions upload:*)",
+            "Bash(incus delete:*)",
+            "Bash(incus stop:*)",
+            "Bash(incus restart:*)"
+        ]
+    }
+}

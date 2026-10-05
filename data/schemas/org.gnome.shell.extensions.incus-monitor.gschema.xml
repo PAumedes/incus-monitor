@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<schemalist gettext-domain="incus-monitor@patricioaumedes">
+  <schema id="org.gnome.shell.extensions.incus-monitor"
+          path="/org/gnome/shell/extensions/incus-monitor/">
+    <key name="refresh-interval" type="u">
+      <range min="2" max="60"/>
+      <default>10</default>
+      <summary>Refresh interval</summary>
+      <description>Seconds between instance list refreshes while the menu is closed.</description>
+    </key>
+    <key name="show-running-count" type="b">
+      <default>true</default>
+      <summary>Show running count</summary>
+      <description>Show the number of running instances next to the panel icon.</description>
+    </key>
+    <key name="show-stopped-instances" type="b">
+      <default>true</default>
+      <summary>Show stopped instances</summary>
+      <description>List stopped instances in the menu.</description>
+    </key>
+    <key name="terminal-command" type="as">
+      <default>[]</default>
+      <summary>Terminal command</summary>
+      <description>Command prefix used to open a shell, e.g. ['ptyxis', '--']. Empty means detect automatically.</description>
+    </key>
+  </schema>
+</schemalist>
