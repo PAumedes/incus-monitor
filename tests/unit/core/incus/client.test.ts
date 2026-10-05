@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { CancelSource } from '../../../../src/core/cancel.js';
 import type { IncusError } from '../../../../src/core/errors.js';
 import { IncusClient } from '../../../../src/core/incus/client.js';
-import type { InstanceAction } from '../../../../src/core/incus/client.js';
+import type { InstanceAction } from '../../../../src/core/incus/actions.js';
 import { FakeTransport, type Reply } from '../../fakes/transport.js';
 
 function fixtureReply(name: string): Reply {
