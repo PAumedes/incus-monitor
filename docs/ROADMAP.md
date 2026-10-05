@@ -13,10 +13,10 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T02 | `core/http/request.ts`, `core/http/response.ts`: HTTP/1.1 codec                                              | T01        | review |
 | T03 | `core/incus/envelope.ts`: sync / async / error envelopes                                                     | T01        | review |
 | T04 | `core/incus/decode.ts`, `models.ts`: Server, Instance, InstanceState decoders against fixtures               | T03        | review |
-| T05 | `core/incus/compat.ts`: server version and api_extensions gate                                               | T04        | todo   |
-| T06 | `core/ports.ts`, `core/incus/client.ts`: IncusClient over a Transport port                                   | T02, T04   | todo   |
+| T05 | `core/incus/compat.ts`: server version and api_extensions gate                                               | T04        | review |
+| T06 | `core/ports.ts`, `core/incus/client.ts`: IncusClient over a Transport port                                   | T02, T04   | review |
 | T07 | `core/socket.ts`, `core/cancel.ts`: socket discovery over a SocketProbe port, cancellation                   | T01        | review |
-| T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | todo   |
+| T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | review |
 | T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | todo   |
 | T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | todo   |
 | T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, file probe, launcher, clipboard           | T06, T07   | todo   |
@@ -82,8 +82,9 @@ Status: `todo` · `in-progress` · `review` · `done`
   lines is the contract.
 - The operation wait path is built only from the validated `Envelope.operation` plus a fixed
   suffix (`/wait?timeout=60&project=…`), never from raw JSON or metadata.
-- `encodeRequest` throws on an invalid path. The client never lets that escape: names are
-  validated and percent-encoded first, and any residual throw becomes a `protocol` error.
+- Names and operation paths are validated and percent-encoded before any request is built, so
+  the request is safe by construction. The client does not wrap port calls (ADR-0012); the
+  transport adapter encodes the request and maps any encode failure to `protocol`.
 
 ### T07: Socket discovery
 
@@ -115,6 +116,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 - One `CancelSource` per `enable()`, cancelled in `disable()`. A `cancelled` result is a silent
   stop: no UI state, no back-off, no log. A top-level catch around the polling loop prevents
   an unhandled rejection after `disable()` if a port breaks its contract.
+- A `cancelled` result after a successful state change is not a failure: the action proceeds
+  on the server, so the monitor just refreshes.
 - Re-runs socket discovery after a connection failure; reads `INCUS_SOCKET` via the composition
   root (`GLib.getenv(...) ?? undefined`).
 - Logs only `detail` from protocol errors, at warn level, at most once per state transition.
@@ -139,6 +142,8 @@ Status: `todo` · `in-progress` · `review` · `done`
   NOT_FOUND / NOT_DIRECTORY → `missing`; PERMISSION_DENIED (including an inaccessible parent
   such as a 0700 `/var/lib/incus`) or `can-write = false` → `denied`; not a socket → `missing`;
   any other error → `missing`, logged once with `console.warn`. GJS tests for each case.
+- The transport gives `wait` requests their own deadline (the 60 s server-side wait plus a
+  margin) instead of the 10 s request timeout.
 - Every adapter bridges `CancelSignal` to `Gio.Cancellable` and never rejects (ADR-0012). Adapters unsubscribe
   their `onCancel` registration in `finally`, so a long-lived signal does not accumulate callbacks.
 - The transport feeds `ResponseParser.push()` with bounded reads (at most 64 KiB per call, one
@@ -147,7 +152,10 @@ Status: `todo` · `in-progress` · `review` · `done`
 ### T12: UI
 
 - Matches [UI_DESIGN.md](UI_DESIGN.md). Rows are diffed, not rebuilt. All strings are
-  translatable. The lifecycle checklist in [TESTING.md](TESTING.md#manual-matrix) passes on 50.
+  translatable. The readout column is right-aligned with a fixed `em` width, so values
+  crossing 10, 100 or 1000 do not shift the layout. A '—' readout ("not available") gets an
+  accessible name that says so. The `Formatter` translates unit templates once at construction, so the UI
+  creates it in `enable()` (a language change takes effect on the next enable). The lifecycle checklist in [TESTING.md](TESTING.md#manual-matrix) passes on 50.
 
 ### T13: Preferences
 
