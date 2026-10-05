@@ -6,6 +6,13 @@ import { encodeRequest } from '../../../../src/core/http/request.js';
 const decode = (b: Uint8Array): string => new TextDecoder().decode(b);
 
 describe('encodeRequest', () => {
+    it('does not put the timeout override on the wire', () => {
+        const plain = encodeRequest({ method: 'GET', path: '/x' });
+        const withTimeout = encodeRequest({ method: 'GET', path: '/x', timeoutMs: 65_000 });
+        expect(withTimeout).toStrictEqual(plain);
+        expect(decode(withTimeout)).not.toMatch(/65000|timeout/i);
+    });
+
     it('serialises a GET with the documented headers in order', () => {
         const out = encodeRequest({ method: 'GET', path: '/1.0/instances?recursion=1' });
         expect(decode(out)).toBe(

@@ -5,7 +5,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import System from 'system';
 
-import { runRegistered } from './harness.js';
+import { runRegistered, test } from './harness.js';
 
 const here = Gio.File.new_for_uri(import.meta.url).get_parent();
 if (!here) throw new Error('cannot resolve test directory');
@@ -21,7 +21,17 @@ const loop = new GLib.MainLoop(null, false);
 let exitCode = 1;
 
 (async () => {
-    for (const name of modules.sort()) await import(`./${name}`);
+    for (const name of modules.sort()) {
+        // A test file that cannot load (for example, a module under test that does not exist yet)
+        // fails as one test, so it cannot hide the results of every other file.
+        try {
+            await import(`./${name}`);
+        } catch (error) {
+            test(`load ${name}`, () => {
+                throw error;
+            });
+        }
+    }
     exitCode = (await runRegistered()) === 0 ? 0 : 1;
 })()
     .catch((error: unknown) => {
