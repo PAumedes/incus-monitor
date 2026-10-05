@@ -7,11 +7,17 @@ cd "$(dirname "$0")/.."
 domain=$(python3 -c 'import json; print(json.load(open("data/metadata.json"))["gettext-domain"])')
 pot="po/$domain.pot"
 
+rm -f "$pot"
 find src -name '*.ts' | sort | xargs xgettext \
     --from-code=UTF-8 --language=JavaScript \
-    --keyword=_ --keyword=ngettext:1,2 --keyword=pgettext:1c,2 \
+    --keyword=_ \
     --package-name="$domain" --add-comments=Translators \
     --output="$pot"
+
+if [[ ! -s $pot ]]; then
+    echo "error: no translatable strings found in src/" >&2
+    exit 1
+fi
 
 for po in po/*.po; do
     [[ -e $po ]] || continue
