@@ -10,8 +10,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 | --- | ------------------------------------------------------------------------------------------------------------ | ---------- | ------ |
 | T00 | Repository bootstrap: `git init`, first commit, `make hooks`, GitHub repository, first green Actions run     | —          | done   |
 | T01 | `core/result.ts`, `core/errors.ts`: Result type and the `IncusError` union                                   | —          | review |
-| T02 | `core/http/request.ts`, `core/http/response.ts`: HTTP/1.1 codec                                              | T01        | todo   |
-| T03 | `core/incus/envelope.ts`: sync / async / error envelopes                                                     | T01        | todo   |
+| T02 | `core/http/request.ts`, `core/http/response.ts`: HTTP/1.1 codec                                              | T01        | review |
+| T03 | `core/incus/envelope.ts`: sync / async / error envelopes                                                     | T01        | review |
 | T04 | `core/incus/decode.ts`, `models.ts`: Server, Instance, InstanceState decoders against fixtures               | T03        | todo   |
 | T05 | `core/incus/compat.ts`: server version and api_extensions gate                                               | T04        | todo   |
 | T06 | `core/ports.ts`, `core/incus/client.ts`: IncusClient over a Transport port                                   | T02, T04   | todo   |
@@ -61,6 +61,12 @@ Status: `todo` · `in-progress` · `review` · `done`
 - `InstanceStatus` derived from `status_code` (see [INCUS_API.md](INCUS_API.md#fields-we-read)).
 - Primary-address selection rule tested on IPv4-only, IPv6-only, dual-stack and loopback-only
   cases.
+- Metadata is `unknown`: no `as` casts, no spreading it into objects. Dynamic daemon keys
+  (devices, networks) go into a `Map` and use `Object.hasOwn`; `__proto__` and `constructor` are
+  ordinary keys. Test: metadata with those keys leaves `Object.prototype` and the output unchanged.
+- Daemon strings that can reach the UI or logs are length-capped. Instance and project names are
+  validated against Incus naming rules before they can reach argv or a URL.
+- Move `isRecord` from `envelope.ts` to `decode.ts` (separate `refactor:` commit).
 
 ### T05: Compat
 
@@ -74,6 +80,10 @@ Status: `todo` · `in-progress` · `review` · `done`
   are URL-encoded.
 - All tests go through a `FakeTransport` that records requests. Asserting on exact request
   lines is the contract.
+- The operation wait path is built only from the validated `Envelope.operation` plus a fixed
+  suffix (`/wait?timeout=60&project=…`), never from raw JSON or metadata.
+- `encodeRequest` throws on an invalid path. The client never lets that escape: names are
+  validated and percent-encoded first, and any residual throw becomes a `protocol` error.
 
 ### T07: Socket discovery
 
@@ -97,6 +107,9 @@ Status: `todo` · `in-progress` · `review` · `done`
   fire afterwards (tested with FakeClock).
 - `perform(action, ref)` serialises actions per instance and rejects actions invalid for the
   current state.
+- Logs only `detail` from protocol errors, at warn level, at most once per state transition.
+  Log output is sanitised once at the sink: C0/C1 controls, U+2028/U+2029 and bidi overrides
+  are replaced.
 
 ### T10: Presenter
 
@@ -110,6 +123,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 - The launcher builds argv only. Terminal detection order: setting, `xdg-terminal-exec`,
   `ptyxis`, `kgx`, `gnome-terminal`. Each is unit-tested for argv shape.
 - The clock tracks and removes every source on `dispose()`.
+- The transport feeds `ResponseParser.push()` with bounded reads (at most 64 KiB per call, one
+  read per main-loop dispatch), so a hostile peer cannot monopolise the compositor.
 
 ### T12: UI
 
