@@ -10,7 +10,7 @@ pot="po/$domain.pot"
 rm -f "$pot"
 find src -name '*.ts' | sort | xargs xgettext \
     --from-code=UTF-8 --language=JavaScript \
-    --keyword=_ \
+    --keyword=_ --keyword=ngettext:1,2 \
     --package-name="$domain" --add-comments=Translators \
     --output="$pot"
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { CancelSource } from '../../../../src/core/cancel.js';
 import type { IncusError } from '../../../../src/core/errors.js';
 import { IncusClient } from '../../../../src/core/incus/client.js';
-import type { InstanceAction } from '../../../../src/core/incus/client.js';
+import type { InstanceAction } from '../../../../src/core/incus/actions.js';
 import { FakeTransport, type Reply } from '../../fakes/transport.js';
 
 function fixtureReply(name: string): Reply {
@@ -306,7 +306,9 @@ describe('IncusClient.wait', () => {
             const path = `${OP_PATH}/wait?timeout=60&project=${encodeURIComponent(project)}`;
             const transport = new FakeTransport({ [`GET ${path}`]: operation(200) });
             const result = await new IncusClient(transport).wait({ path: OP_PATH, project }, NEVER);
-            expect(transport.requests).toStrictEqual([{ method: 'GET', path }]);
+            expect(transport.requests.map(({ method, path }) => ({ method, path }))).toStrictEqual([
+                { method: 'GET', path },
+            ]);
             expect(result).toStrictEqual({ ok: true, value: true });
         },
     );
@@ -329,10 +331,37 @@ describe('IncusClient.wait', () => {
     it('requests the operation wait endpoint with a 60 s timeout', async () => {
         const transport = new FakeTransport({ [WAIT_KEY]: operation(200) });
         const result = await new IncusClient(transport).wait(OPERATION, NEVER);
-        expect(transport.requests).toStrictEqual([
+        expect(transport.requests.map(({ method, path }) => ({ method, path }))).toStrictEqual([
             { method: 'GET', path: `${OP_PATH}/wait?timeout=60&project=user-1000` },
         ]);
         expect(result).toEqual({ ok: true, value: true });
+    });
+
+    it('gives the wait request a deadline above the 60 s the server holds it, within 90 s', async () => {
+        const transport = new FakeTransport({ [WAIT_KEY]: operation(200) });
+        await new IncusClient(transport).wait(OPERATION, NEVER);
+        const timeoutMs = transport.requests[0]?.timeoutMs;
+        expect(timeoutMs).toBeGreaterThan(60_000);
+        expect(timeoutMs).toBeLessThanOrEqual(90_000);
+    });
+
+    it('sends no deadline override on server, list and state requests', async () => {
+        const instancesKey = 'GET /1.0/instances?all-projects=true&recursion=1';
+        const transport = new FakeTransport({
+            'GET /1.0': fixtureReply('server'),
+            [instancesKey]: syncReply([]),
+            [STATE_KEY]: asyncReply(),
+        });
+        const client = new IncusClient(transport);
+        await client.server(NEVER);
+        await client.instances(false, NEVER);
+        await client.changeState(REF, 'start', NEVER);
+        expect(transport.requests.length).toBe(3);
+        expect(transport.requests.map(r => r.timeoutMs)).toStrictEqual([
+            undefined,
+            undefined,
+            undefined,
+        ]);
     });
 
     it('returns an api error carrying the operation failure message', async () => {

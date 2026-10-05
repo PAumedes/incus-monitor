@@ -23,7 +23,15 @@ function show(value: unknown): string {
     return value === undefined ? 'undefined' : JSON.stringify(value);
 }
 
-export const assert = {
+// An explicit type is required for `asserts` signatures to narrow at call sites.
+interface Assert {
+    ok(value: unknown, message?: string): asserts value;
+    equal<T>(actual: T, expected: T, message?: string): void;
+    deepEqual(actual: unknown, expected: unknown, message?: string): void;
+    rejects(promise: Promise<unknown>, predicate: (error: unknown) => boolean): Promise<void>;
+}
+
+export const assert: Assert = {
     ok(value: unknown, message = `expected truthy, got ${show(value)}`): asserts value {
         if (!value) throw new AssertionError(message);
     },
@@ -63,7 +71,9 @@ export async function runRegistered(): Promise<number> {
         } catch (error) {
             failures++;
             print(`not ok - ${name}`);
-            printerr(error instanceof Error ? (error.stack ?? error.message) : String(error));
+            printerr(
+                error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error),
+            );
         }
     }
     print(`# ${String(registry.length - failures)}/${String(registry.length)} passed`);

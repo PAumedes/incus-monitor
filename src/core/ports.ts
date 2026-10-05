@@ -3,6 +3,7 @@ import type { CancelSignal } from './cancel.js';
 import type { IncusError } from './errors.js';
 import type { HttpRequest } from './http/request.js';
 import type { HttpResponse } from './http/response.js';
+import type { LaunchError, LaunchTarget } from './launch.js';
 import type { Result } from './result.js';
 
 /** What the current user may do with a socket path. */
@@ -36,4 +37,12 @@ export interface Clock {
     setTimeout(ms: number, callback: () => void): () => void;
     /** Milliseconds on a monotonic scale; only differences are meaningful. */
     now(): number;
+}
+
+/**
+ * Opens a terminal running an `incus` command for an instance. An empty `terminalSetting` means
+ * "detect one". Total: spawn failures come back as `spawn-failed`, never as a throw.
+ */
+export interface Launch {
+    launch(target: LaunchTarget, terminalSetting: readonly string[]): Result<void, LaunchError>;
 }

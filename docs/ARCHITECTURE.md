@@ -57,7 +57,7 @@ src/
 │   ├── result.ts           Result<T, E> and helpers. No exceptions cross module boundaries.
 │   ├── errors.ts           IncusError: a tagged union of every failure the UI can explain.
 │   ├── cancel.ts           CancelSignal / CancelSource: cancellation without AbortController (absent in GJS).
-│   ├── ports.ts            Interfaces implemented by adapters: SocketProbe, Transport, Clock, Launcher, Clipboard.
+│   ├── ports.ts            Interfaces implemented by adapters: SocketProbe, Transport, Clock, Launch.
 │   ├── http/
 │   │   ├── request.ts      Serialise an HTTP/1.1 request (Host, Connection: close, JSON body).
 │   │   └── response.ts     Parse an HTTP/1.1 response: status, headers, Content-Length, chunked.
@@ -65,10 +65,13 @@ src/
 │   │   ├── envelope.ts     Decode sync / async / error envelopes.
 │   │   ├── models.ts       Validated domain types: Server, Instance, InstanceState.
 │   │   ├── decode.ts       Hand-written decoders from unknown JSON (no runtime deps).
+│   │   ├── actions.ts      Lifecycle actions, the statuses each may start from, and their menu order.
 │   │   ├── validate.ts     Name and path validators, text sanitisers shared by decoders and client.
 │   │   ├── compat.ts       Required api_extensions and supported server versions.
 │   │   └── client.ts       IncusClient: server info, list instances, change state, wait for an operation.
+│   ├── launch.ts           Terminal candidates, detection and argv building for shell/console launches (pure).
 │   ├── socket.ts           Socket candidate discovery (system socket, incus-user socket).
+│   ├── sampler.ts          Last two samples per instance; derives CPU % and network rates for the presenter.
 │   ├── metrics.ts          CPU %, memory, network rates from successive samples.
 │   ├── format.ts           Human-readable sizes, rates and durations (locale and gettext injected).
 │   ├── monitor.ts          State machine + scheduling (idle/slow vs open/fast cadence, back-off), compat check, socket discovery re-run, `perform`.
@@ -78,10 +81,11 @@ src/
 │   ├── glib-clock.ts       Clock over GLib.timeout_add; every source is tracked and removable.
 │   ├── settings.ts         Typed GSettings wrapper with change subscription.
 │   ├── socket-probe.ts     Classifies socket paths (missing / denied / usable) with Gio, without connecting.
-│   ├── launcher.ts         Terminal detection and Gio.Subprocess spawn (argv only, never a shell string).
-│   └── clipboard.ts        St.Clipboard write (explicit user action only).
+│   ├── launcher.ts         GioLauncher: PATH lookup and Gio.Subprocess spawn (argv only, never a shell string).
+│   └── io-error.ts         Matches a GLib.Error against a Gio.IOErrorEnum code.
 └── ui/
     ├── indicator.ts        PanelMenu.Button: icon + optional running count.
+    ├── clipboard.ts        St.Clipboard write (explicit user action only; needs St, so not an adapter).
     ├── instance-item.ts    One row per instance; expands into details and actions.
     ├── state-item.ts       Empty / error / unsupported states with a single actionable hint.
     └── footer.ts           Refresh and Preferences buttons.
