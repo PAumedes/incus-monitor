@@ -84,17 +84,19 @@ that doesn't fit is a `protocol` error:
 Codes must be integers. Incus uses 1xx for operation states, 2xx–3xx for success and 4xx–5xx for
 failures. The operation id is validated here because later requests are built from it. Protocol
 details quote daemon values only in shortened, single-line form, so a hostile body cannot flood
-or forge log lines.
+or forge log lines. Messages that can reach
+the UI (an `api` error's text, an operation's `err`) are capped at 500 characters, with control,
+format and line-separator characters replaced by spaces.
 
 ## Endpoints used
 
-| Purpose                 | Request                                                        | Notes                                                                                                                  |
-| ----------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Server and compat check | `GET /1.0`                                                     | `environment.server_version`, `api_extensions`, `auth`. Once per connection lifecycle.                                 |
-| List (cheap)            | `GET /1.0/instances?all-projects=true&recursion=1`             | Name, project, type, status, status_code, config.                                                                      |
-| List with state         | `GET /1.0/instances?all-projects=true&recursion=2`             | Adds `state`: cpu, memory, network, disk, processes, started_at. Expensive for VMs (agent round-trip). Menu open only. |
-| Change state            | `PUT /1.0/instances/<name>/state?project=<project>`            | Body `{"action":"start"                                                                                                | "stop" | "restart" | "freeze" | "unfreeze","timeout":30,"force":false}`. Returns `async`. |
-| Wait for operation      | `GET /1.0/operations/<uuid>/wait?timeout=60&project=<project>` | Resolves to the final operation; check `status_code` 200 vs 400/401.                                                   |
+| Purpose                 | Request                                                        | Notes                                                                                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Server and compat check | `GET /1.0`                                                     | `environment.server_version`, `api_extensions`, `auth`. Once per connection lifecycle.                                                                                                                       |
+| List (cheap)            | `GET /1.0/instances?all-projects=true&recursion=1`             | Name, project, type, status, status_code, config.                                                                                                                                                            |
+| List with state         | `GET /1.0/instances?all-projects=true&recursion=2`             | Adds `state`: cpu, memory, network, disk, processes, started_at. Expensive for VMs (agent round-trip). Menu open only.                                                                                       |
+| Change state            | `PUT /1.0/instances/<name>/state?project=<project>`            | Body `{"action":"start"                                                                                                                                                                                      | "stop" | "restart" | "freeze" | "unfreeze","timeout":30,"force":false}`. Returns `async`. |
+| Wait for operation      | `GET /1.0/operations/<uuid>/wait?timeout=60&project=<project>` | Sync envelope with the operation. `status_code` 200 → done; 400 (Failure) or 401 (Cancelled) → `api` error carrying `err`; anything else (e.g. 103 Running when the server-side wait times out) → `timeout`. |
 
 Names in paths are URL-encoded with `encodeURIComponent`, and projects are always passed
 explicitly on per-instance calls.
@@ -136,7 +138,7 @@ Required `api_extensions` (all present in 6.0.x):
 - `instance_state_cpu_time`: `state.cpu.allocated_time`
 - `instance_state_started_at`: `state.started_at`
 
-`core/incus/compat.ts` owns this list. If an extension is missing, the UI shows the "unsupported"
+`core/incus/compat.ts` owns this list. No version string is compared. If an extension is missing, the UI shows the "unsupported"
 state instead of failing halfway. Verify the exact names against `tests/fixtures/incus/*/server.json`
 whenever this list changes.
 

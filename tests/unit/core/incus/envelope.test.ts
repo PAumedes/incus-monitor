@@ -204,6 +204,36 @@ describe('decodeEnvelope: error', () => {
     });
 });
 
+describe('decodeEnvelope: error message sanitising', () => {
+    const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+    function message(raw: string): string {
+        const result = decodeEnvelope(404, errorBody(404, raw));
+        return !result.ok && result.error.kind === 'api' ? result.error.message : '<not api>';
+    }
+
+    it('keeps a 200-character message whole', () => {
+        expect(message('x'.repeat(200))).toBe('x'.repeat(200));
+    });
+
+    it('cuts a 600-character message to 500', () => {
+        expect(message('x'.repeat(600))).toHaveLength(500);
+    });
+
+    it.each(['\n', '\u202E', '\u200B', '\u2028', '\uD800'])('replaces %j with a space', char => {
+        expect(message(`a${char}b`)).toBe('a b');
+    });
+
+    it.each(['😀'.repeat(300), `x${'😀'.repeat(300)}`])(
+        'never leaves a lone surrogate after the cut',
+        raw => {
+            const text = message(raw);
+            expect(text.length).toBeLessThanOrEqual(500);
+            expect(lone.test(text)).toBe(false);
+        },
+    );
+});
+
 describe('decodeEnvelope: malformed input', () => {
     it.each([
         ['empty body', ''],
