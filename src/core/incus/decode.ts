@@ -2,7 +2,15 @@
 import type { IncusError } from '../errors.js';
 import { err, ok, type Result } from '../result.js';
 
-import type { Instance, InstanceState, InstanceStatus, InstanceType, Server } from './models.js';
+import type {
+    Instance,
+    InstanceState,
+    InstanceStatus,
+    InstanceType,
+    OperationResult,
+    Server,
+} from './models.js';
+import { isArray, isInstanceName, isProjectName, isRecord, shortened } from './validate.js';
 
 type Decoded<T> = Result<T, IncusError>;
 type Fields = Record<string, unknown>;
@@ -15,35 +23,9 @@ interface Limits {
 
 const COUNTER = { min: 0, fallback: 0 };
 
-const INSTANCE_NAME = /^[A-Za-z](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/;
-// Mirrors Incus's projectValidateName and validate.IsAPIName, plus a ban on Unicode control and
-// format characters (bidi overrides, zero-width) that could spoof labels. The 64-byte cap is
-// checked separately because a regex counts characters.
-const PROJECT_NAME = /^[A-Za-z0-9](?:[^\s$?&+"'`*/_\p{C}]*[A-Za-z0-9])?$/u;
-const MAX_PROJECT_BYTES = 64;
-const UNSAFE_CHARS = /[\p{C}\p{Zl}\p{Zp}]/gu;
 const IP_ADDRESS = /^[0-9A-Fa-f.:]{2,45}$/;
 const VERSION = /^[\x20-\x7e]{0,32}$/;
-const MAX_SHOWN_LENGTH = 40;
 const INSTANCE_TYPES: readonly InstanceType[] = ['container', 'virtual-machine'];
-
-export function isRecord(value: unknown): value is Fields {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isArray(value: unknown): value is readonly unknown[] {
-    return Array.isArray(value);
-}
-
-/**
- * Daemon-supplied text made safe for a log line or error path: short and single-line, so a
- * hostile body cannot flood the log or forge entries.
- */
-export function shortened(text: string): string {
-    // Replacing after the cut also catches a surrogate pair split by it.
-    const shown = text.slice(0, MAX_SHOWN_LENGTH).replace(UNSAFE_CHARS, '?');
-    return text.length > MAX_SHOWN_LENGTH ? `${shown}...` : shown;
-}
 
 function fail(path: string, detail: string): Decoded<never> {
     return err({ kind: 'decode', path, detail });
@@ -56,10 +38,6 @@ function own(parent: Fields, key: string): unknown {
 
 function absent(value: unknown): value is null | undefined {
     return value === undefined || value === null;
-}
-
-function isProjectName(value: string): boolean {
-    return PROJECT_NAME.test(value) && new TextEncoder().encode(value).length <= MAX_PROJECT_BYTES;
 }
 
 function requiredString(
@@ -265,7 +243,7 @@ function decodeInstance(raw: unknown, path: string): Decoded<Instance> {
     if (!isRecord(raw)) return fail(path, 'expected an object');
     const project = requiredString(raw, 'project', path, isProjectName);
     if (!project.ok) return project;
-    const name = requiredString(raw, 'name', path, value => INSTANCE_NAME.test(value));
+    const name = requiredString(raw, 'name', path, isInstanceName);
     if (!name.ok) return name;
     const type = decodeType(raw, path);
     if (!type.ok) return type;
@@ -322,4 +300,17 @@ export function decodeServer(metadata: unknown): Decoded<Server> {
     const apiExtensions = decodeApiExtensions(metadata);
     if (!apiExtensions.ok) return apiExtensions;
     return ok({ version: version.value, apiExtensions: apiExtensions.value });
+}
+
+/** Absent or null `err` reads as "": Incus leaves it empty on success. */
+export function decodeOperationResult(metadata: unknown): Decoded<OperationResult> {
+    if (!isRecord(metadata)) return fail('metadata', 'expected an object');
+    const code = own(metadata, 'status_code');
+    if (typeof code !== 'number' || !Number.isInteger(code)) {
+        return fail('metadata.status_code', 'expected an integer');
+    }
+    const message = own(metadata, 'err');
+    if (absent(message)) return ok({ statusCode: code, error: '' });
+    if (typeof message !== 'string') return fail('metadata.err', 'expected a string');
+    return ok({ statusCode: code, error: message });
 }
