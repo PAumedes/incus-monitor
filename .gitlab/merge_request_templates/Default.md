@@ -21,7 +21,7 @@
 ## Review
 
 - [ ] Adversarial review run (docs/AGENT_WORKFLOW.md): no open blocker or major
-- [ ] Docs updated: ARCHITECTURE / INCUS_API / UI_DESIGN / ADR / CHANGELOG (Unreleased)
+- [ ] Docs updated: ARCHITECTURE / INCUS_API / UI_DESIGN / ADR; commit subjects written for users (they become the changelog)
 - [ ] No new dependencies; no lint or tsconfig changes (or justified below)
 
 ## Screenshots

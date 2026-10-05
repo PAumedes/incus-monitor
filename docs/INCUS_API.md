@@ -25,8 +25,11 @@ Connection errors map to UI states:
 | `NOT_FOUND`                   | Socket path absent             | `not-installed`      |
 | `PERMISSION_DENIED`           | Not in the required group      | `permission-denied`  |
 | `CONNECTION_REFUSED`          | Daemon down, activation failed | `unreachable`        |
-| `TIMED_OUT` / our own timeout | Daemon hung                    | `unreachable`        |
+| `TIMED_OUT` / our own timeout | Daemon hung                    | `timeout`            |
 | `CANCELLED`                   | `disable()` or superseded poll | `cancelled` (silent) |
+
+The UI shows `unreachable` and `timeout` the same way ("Incus is not responding", with Retry).
+They stay separate kinds so that logs say which one happened.
 
 ## HTTP over the socket
 
