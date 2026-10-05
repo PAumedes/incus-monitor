@@ -57,7 +57,19 @@ Connection: close
 { "type": "error", "error_code": 404, "error": "Instance not found", "metadata": null }
 ```
 
-Decode by `type`, then cross-check against the HTTP status. A mismatch is a `protocol` error.
+Decode by `type`, then cross-check against the HTTP status (`core/incus/envelope.ts`). Anything
+that doesn't fit is a `protocol` error:
+
+| `type`  | HTTP status    | Code field            | Other requirements                                                        |
+| ------- | -------------- | --------------------- | ------------------------------------------------------------------------- |
+| `sync`  | 200–299        | `status_code` 200–399 | —                                                                         |
+| `async` | 202            | `status_code` 100–199 | `operation` is `/1.0/operations/<id>`, id `[A-Za-z0-9-]{1,64}`            |
+| `error` | = `error_code` | `error_code` 400–599  | string `error`, becomes an `api` error (message capped at 500 characters) |
+
+Codes must be integers. Incus uses 1xx for operation states, 2xx–3xx for success and 4xx–5xx for
+failures. The operation id is validated here because later requests are built from it. Protocol
+details quote daemon values only in shortened, single-line form, so a hostile body cannot flood
+or forge log lines.
 
 ## Endpoints used
 
