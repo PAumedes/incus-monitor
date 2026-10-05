@@ -249,13 +249,13 @@ describe('decodeEnvelope: protocol detail hygiene', () => {
             }),
             202,
         ],
+        ['a type with a bidi override', JSON.stringify({ type: 'a\u202Eb' }), 200],
         ['a type with a forged log line', JSON.stringify({ type: 'a\nWARN forged' }), 200],
     ])('keeps detail short and single-line for %s', (_label, body, status) => {
         const result = decodeEnvelope(status, body);
         expectProtocol(result);
         const detail = !result.ok && result.error.kind === 'protocol' ? result.error.detail : '';
         expect(detail.length).toBeLessThan(200);
-        const controls = detail.split('').filter(c => c.charCodeAt(0) < 0x20 || c === '\x7f');
-        expect(controls).toStrictEqual([]);
+        expect(/[\p{C}\u2028\u2029]/u.test(detail)).toBe(false);
     });
 });
