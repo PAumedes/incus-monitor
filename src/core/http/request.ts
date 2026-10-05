@@ -6,6 +6,8 @@ export interface HttpRequest {
     readonly method: HttpMethod;
     readonly path: string;
     readonly body?: unknown;
+    /** Deadline for the whole exchange, for the transport to enforce; never sent on the wire. */
+    readonly timeoutMs?: number;
 }
 
 // Printable ASCII without space: nothing in the path can start a new header or request line.

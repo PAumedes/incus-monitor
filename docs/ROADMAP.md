@@ -19,7 +19,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | review |
 | T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | review |
 | T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | todo   |
-| T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, file probe, launcher, clipboard           | T06, T07   | todo   |
+| T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, socket probe, launcher                    | T06, T07   | review |
 | T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | todo   |
 | T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | todo   |
 | T14 | Record Incus 7.0 LTS fixtures; contract tests for 6.0 and 7.0                                                | T04        | todo   |
@@ -142,7 +142,6 @@ Status: `todo` · `in-progress` · `review` · `done`
 - The clock tracks and removes every source on `dispose()`. Pitfalls: the callback wrapper
   returns `SOURCE_REMOVE`; cancel is a no-op after the timer fired or was cancelled (source IDs
   are reused); `now()` is monotonic.
-- Log sink: the monitor already sanitises its warnings, so the sink must not escape them again.
 - Socket probe (no connect): `query_info_async('standard::type,access::can-write')`.
   NOT_FOUND / NOT_DIRECTORY → `missing`; PERMISSION_DENIED (including an inaccessible parent
   such as a 0700 `/var/lib/incus`) or `can-write = false` → `denied`; not a socket → `missing`;
@@ -156,12 +155,19 @@ Status: `todo` · `in-progress` · `review` · `done`
 
 ### T12: UI
 
+- `ui/clipboard.ts`: `St.Clipboard` write on an explicit user action (it needs St, so it is not an
+  adapter). Moved here from T11.
+- The composition root's log port (`console.warn`): the monitor already sanitises its warnings,
+  so the port must not escape them again.
 - Matches [UI_DESIGN.md](UI_DESIGN.md). Rows are diffed, not rebuilt. All strings are
   translatable. The readout column is right-aligned with a fixed `em` width, so values
   crossing 10, 100 or 1000 do not shift the layout. A '—' readout ("not available") gets an
   accessible name that says so. The `Formatter` translates unit templates once at construction, so the UI
   creates it in `enable()` (a language change takes effect on the next enable). The lifecycle checklist in [TESTING.md](TESTING.md#manual-matrix) passes on 50.
-
+- `GioSettings` is not passed to `Monitor` as-is. The root builds `MonitorDeps.settings` itself:
+  `refreshIntervalSeconds` as a live getter over `GioSettings`, and `socketOverride` from the
+  `INCUS_SOCKET` environment variable via `GLib.getenv('INCUS_SOCKET') ?? undefined` (there is
+  no socket-override GSettings key).
 - Dispose the `Monitor` last in `disable()`, or inside `try`/`catch`, because
   `CancelSource.cancel()` rethrows. The monitor reads settings live but a changed socket override
   needs a new `Monitor`, so settings changes recreate it.

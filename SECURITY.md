@@ -24,5 +24,7 @@ the whole session, and code running there has the user's full privileges.
 | Clipboard                                      | Leaking data                                                      | Written only on an explicit "Copy address" click; declared in the description.                                                                        |
 | Network                                        | Exfiltration                                                      | No network access besides the local unix socket. No telemetry.                                                                                        |
 
+The `terminal-command` setting is executed as given with the user's privileges: it is arbitrary command execution as the user by design, and anything able to write the user's dconf already has that power.
+
 Out of scope: a compromised Incus daemon (it is already root) and other extensions in the same
 shell.
