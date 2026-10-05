@@ -12,10 +12,10 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T01 | `core/result.ts`, `core/errors.ts`: Result type and the `IncusError` union                                   | —          | review |
 | T02 | `core/http/request.ts`, `core/http/response.ts`: HTTP/1.1 codec                                              | T01        | review |
 | T03 | `core/incus/envelope.ts`: sync / async / error envelopes                                                     | T01        | review |
-| T04 | `core/incus/decode.ts`, `models.ts`: Server, Instance, InstanceState decoders against fixtures               | T03        | todo   |
+| T04 | `core/incus/decode.ts`, `models.ts`: Server, Instance, InstanceState decoders against fixtures               | T03        | review |
 | T05 | `core/incus/compat.ts`: server version and api_extensions gate                                               | T04        | todo   |
 | T06 | `core/ports.ts`, `core/incus/client.ts`: IncusClient over a Transport port                                   | T02, T04   | todo   |
-| T07 | `core/socket.ts`: socket discovery over a FileProbe port                                                     | T01        | todo   |
+| T07 | `core/socket.ts`, `core/cancel.ts`: socket discovery over a SocketProbe port, cancellation                   | T01        | review |
 | T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | todo   |
 | T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | todo   |
 | T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | todo   |
@@ -87,13 +87,18 @@ Status: `todo` · `in-progress` · `review` · `done`
 
 ### T07: Socket discovery
 
-- Order and env override as documented. Permission-denied on a socket that exists stops the
-  search with `permission-denied`, unless a later candidate is usable.
+- Order and override as documented in INCUS_API.md#sockets: the first usable candidate wins;
+  with none, `permission-denied` if any candidate was denied, else `not-installed`.
+- Introduces `core/cancel.ts` and the total-port convention (ADR-0012): `SocketProbe.access`
+  never rejects and takes a `CancelSignal`; discovery returns `cancelled` when aborted.
 
 ### T08: Metrics and formatting
 
 - CPU % from two samples; first sample → `null` (unknown), not 0. Counter reset (restart) →
   `null`, never negative.
+- `cpuAllocatedNsPerSecond` or `memoryTotalBytes` of 0 means "not reported": CPU % and memory %
+  are `null`, never Infinity or NaN. Network sums can drop when an interface disappears: a
+  negative delta → `null` rate.
 - Network rates exclude loopback. Memory shown as used/total.
 - Formatting uses injected `locale` and gettext; tests pin `en` and one other locale.
 
@@ -107,6 +112,11 @@ Status: `todo` · `in-progress` · `review` · `done`
   fire afterwards (tested with FakeClock).
 - `perform(action, ref)` serialises actions per instance and rejects actions invalid for the
   current state.
+- One `CancelSource` per `enable()`, cancelled in `disable()`. A `cancelled` result is a silent
+  stop: no UI state, no back-off, no log. A top-level catch around the polling loop prevents
+  an unhandled rejection after `disable()` if a port breaks its contract.
+- Re-runs socket discovery after a connection failure; reads `INCUS_SOCKET` via the composition
+  root (`GLib.getenv(...) ?? undefined`).
 - Logs only `detail` from protocol errors, at warn level, at most once per state transition.
   Log output is sanitised once at the sink: C0/C1 controls, U+2028/U+2029 and bidi overrides
   are replaced.
@@ -115,6 +125,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 
 - Deterministic `ViewModel` (sorting, labels, dot class, actions, readout strings, accessible
   names). Snapshot-tested against builders, not against UI.
+- `processes < 0` means "not reported": never rendered as a count; it selects "Open Console" for
+  VMs.
 
 ### T11: Adapters
 
@@ -123,6 +135,12 @@ Status: `todo` · `in-progress` · `review` · `done`
 - The launcher builds argv only. Terminal detection order: setting, `xdg-terminal-exec`,
   `ptyxis`, `kgx`, `gnome-terminal`. Each is unit-tested for argv shape.
 - The clock tracks and removes every source on `dispose()`.
+- Socket probe (no connect): `query_info_async('standard::type,access::can-write')`.
+  NOT_FOUND / NOT_DIRECTORY → `missing`; PERMISSION_DENIED (including an inaccessible parent
+  such as a 0700 `/var/lib/incus`) or `can-write = false` → `denied`; not a socket → `missing`;
+  any other error → `missing`, logged once with `console.warn`. GJS tests for each case.
+- Every adapter bridges `CancelSignal` to `Gio.Cancellable` and never rejects (ADR-0012). Adapters unsubscribe
+  their `onCancel` registration in `finally`, so a long-lived signal does not accumulate callbacks.
 - The transport feeds `ResponseParser.push()` with bounded reads (at most 64 KiB per call, one
   read per main-loop dispatch), so a hostile peer cannot monopolise the compositor.
 
