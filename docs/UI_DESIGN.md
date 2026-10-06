@@ -47,7 +47,18 @@ Expanded row (`PopupSubMenuMenuItem`):
 
 - A `PopupSeparatorMenuItem` sets the actions (Open Shell and the buttons) apart from the
   details. It is shown only when the details and at least one action are, and is destroyed with
-  the row. A second one sets the buttons apart from Open Shell, shown only when both are. The address has an 8 px right margin so the copy button does not touch it.
+  the row. A second one sets the buttons apart from Open Shell, shown only when both are. The
+  address has an 8 px right margin so the copy button does not touch it.
+- **Rules and Open Shell inside the block.** Yaru and the stock theme inset a submenu rule on one
+  side only (2.5 em), so it ended short of the footer's rule: our rules take the class
+  `incus-monitor-rule`, which zeroes that margin. At rest Open Shell is a plain row on the detail
+  rows' text column. The theme draws a submenu item's hover and keyboard focus edge to edge with
+  square corners, which looks like a stray grey bar (it is easy to hit: after Open Shell is
+  clicked, the expanded row reopens under a pointer that is still there), so the row's class
+  `incus-monitor-terminal` insets that highlight 6 px with a rounded corner, and the padding keeps
+  the text where it was. Expansion never moves key focus; Tab reaches the copy button, Open Shell
+  and the action buttons in turn. The header's grey while expanded is the theme's `:checked` state
+  and stays.
 - **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). The
   project name is shown in dim text only when instances come from more than one project.
 - **Status dot**: an 8 px circle styled by CSS class (`running`, `frozen`, `stopped`, `error`). The

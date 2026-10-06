@@ -46,6 +46,14 @@ function inertItem(): PopupMenu.PopupBaseMenuItem {
     return new PopupMenu.PopupBaseMenuItem({ activate: false, hover: false, can_focus: false });
 }
 
+// The themes inset a rule inside a submenu on the right only, which would leave it shorter than
+// the footer's. The class lets the stylesheet give it the same width.
+function rule(): PopupMenu.PopupSeparatorMenuItem {
+    const separator = new PopupMenu.PopupSeparatorMenuItem();
+    separator.add_style_class_name('incus-monitor-rule');
+    return separator;
+}
+
 /** A fixed-width cell with its text on the right, so values do not shift the columns. */
 function cell(text: St.Label, styleClass: string): St.BoxLayout {
     text.x_expand = true;
@@ -78,9 +86,9 @@ export class InstanceItem {
     readonly #address = label('incus-monitor-tabular incus-monitor-address');
     readonly #copy: St.Button;
     readonly #uptime = label('incus-monitor-tabular');
-    readonly #separator = new PopupMenu.PopupSeparatorMenuItem();
+    readonly #separator = rule();
     readonly #terminal: PopupMenu.PopupMenuItem;
-    readonly #buttonsSeparator = new PopupMenu.PopupSeparatorMenuItem();
+    readonly #buttonsSeparator = rule();
     readonly #actionsItem = inertItem();
     readonly #actionsBox = new St.BoxLayout({
         x_expand: true,
@@ -101,6 +109,7 @@ export class InstanceItem {
             can_focus: true,
         });
         this.#terminal = new PopupMenu.PopupMenuItem('');
+        this.#terminal.add_style_class_name('incus-monitor-terminal');
         this.#buildHeader();
         this.#buildDetails();
         this.#buildActions();
