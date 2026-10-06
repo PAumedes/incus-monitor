@@ -14,6 +14,8 @@ import type { Row, RowAction, TerminalTarget } from '../core/presenter.js';
 import { copyToClipboard } from './clipboard.js';
 
 export interface InstanceItemDeps {
+    /** The top-level menu actor, where key focus waits once the pointer leaves an item. */
+    readonly home: Clutter.Actor;
     readonly text: MenuText;
     readonly state: MenuState;
     perform(action: InstanceAction, key: string): void;
@@ -57,7 +59,9 @@ function rule(): PopupMenu.PopupSeparatorMenuItem {
 // Stock menu items take key focus when the pointer enters and keep it when it leaves, so the
 // highlight would linger on a row until another focusable item is hovered. A leave event comes
 // from the pointer only: an item focused with the keyboard that the pointer never entered stays put.
-function releaseFocusOnLeave(item: PopupMenu.PopupBaseMenuItem, home: St.Widget): void {
+// Home must not be the submenu's own actor: when an item of a menu turns sensitive and the menu
+// actor holds key focus, the Shell hands it to that item (Open Shell when an action settles).
+function releaseFocusOnLeave(item: PopupMenu.PopupBaseMenuItem, home: Clutter.Actor): void {
     item.connect('leave-event', () => {
         if (global.stage.key_focus === item) home.grab_key_focus();
         return Clutter.EVENT_PROPAGATE;
@@ -123,8 +127,8 @@ export class InstanceItem {
         this.#terminal = new PopupMenu.PopupMenuItem('');
         this.#terminal.add_style_class_name('incus-monitor-terminal');
         this.#buildHeader();
-        releaseFocusOnLeave(this.item, this.item.menu.actor);
-        releaseFocusOnLeave(this.#terminal, this.item.menu.actor);
+        releaseFocusOnLeave(this.item, deps.home);
+        releaseFocusOnLeave(this.#terminal, deps.home);
         this.#buildDetails();
         this.#buildActions();
         this.#dot.connect('notify::mapped', () => {
@@ -257,7 +261,12 @@ export class InstanceItem {
         this.#up.text = `↑ ${details.network.up}`;
         this.#up.accessible_name = spokenRate('up', details.network.up, _);
         setSpoken(this.#address, details.address);
-        this.#copy.visible = details.address !== DASH;
+        // The button keeps its space: hiding it would make the row shorter, and the block would
+        // move under a still pointer whenever the address comes and goes.
+        const hasAddress = details.address !== DASH;
+        this.#copy.opacity = hasAddress ? FULL_OPACITY : 0;
+        this.#copy.reactive = hasAddress;
+        this.#copy.can_focus = hasAddress;
         this.#copy.accessible_name = this.#deps.text.copyAddress(details.address);
         setSpoken(this.#uptime, details.uptime);
     }

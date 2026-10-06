@@ -230,6 +230,75 @@ export default class ScreenshotsExtension extends Extension {
             }
         }
 
+        if (env('SHOT_POINTER')) {
+            for (const name of names) {
+                const row = rows.find(r => r.label.text === name);
+                pointer.notify_absolute_motion(now(), 5, 5);
+                indicator.menu.close(false);
+                await sleep(500);
+                indicator.menu.open(false);
+                await sleep(1500);
+                for (const other of rows) other.menu.close(false);
+                await sleep(300);
+                row.menu.open(false);
+                await sleep(2000);
+                const items = row.menu._getMenuItems();
+                const shell = items.find(i => i.constructor.name === 'PopupMenuItem');
+                const findRestart = () =>
+                    descendants(row.menu.actor).find(
+                        a => a instanceof St.Button && a.accessible_name === 'Restart',
+                    );
+                const restart = findRestart();
+                if (!restart || !shell) {
+                    diagnostics.push(`${name}/pointer: no Restart or Open Shell`);
+                    continue;
+                }
+                const [rx, ry] = center(restart);
+                // Arrive as a hand does, from the header across Open Shell, in small steps.
+                const [hx, hy] = center(row);
+                for (let i = 0; i <= 30; i++) {
+                    pointer.notify_absolute_motion(
+                        now(),
+                        hx + ((rx - hx) * i) / 30,
+                        hy + ((ry - hy) * i) / 30,
+                    );
+                    await sleep(40);
+                }
+                await sleep(800);
+                // Only changes are logged: the point is what moves, and when, under a still pointer.
+                let last = '';
+                const sample = tag => {
+                    const [px, py] = global.get_pointer();
+                    const under = global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, px, py);
+                    const lines = [
+                        `ptr=${px},${py} under=${under ? describe(under) : 'none'}`,
+                        `key focus: ${focus()}`,
+                        `OpenShell ${describe(shell)}`,
+                        ...items.map(d => `item ${describe(d)}`),
+                    ];
+                    const text = lines.join('\n');
+                    if (text !== last) diagnostics.push(`${name}/pointer ${tag}:\n${text}`);
+                    last = text;
+                };
+                sample('before');
+                await screenshot(`${dir}/${prefix}${name}-pointer-before.png`);
+                const watch = global.stage.connect('notify::key-focus', () => {
+                    diagnostics.push(`key-focus -> ${focus()}\n${new Error().stack}`);
+                });
+                // A press through the virtual pointer, as a mouse does; St.Button takes key focus on it.
+                pointer.notify_button(now(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.PRESSED);
+                await sleep(80);
+                pointer.notify_button(now(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.RELEASED);
+                for (let t = 1; t <= 300; t++) {
+                    await sleep(100);
+                    sample(`+${t / 10}s`);
+                    if (t === 10) await screenshot(`${dir}/${prefix}${name}-pointer-pending.png`);
+                }
+                global.stage.disconnect(watch);
+                await screenshot(`${dir}/${prefix}${name}-pointer-after.png`);
+            }
+        }
+
         GLib.file_set_contents(`${dir}/${prefix}diagnostics.txt`, diagnostics.join('\n'));
         indicator.menu.close(false);
         await sleep(500);

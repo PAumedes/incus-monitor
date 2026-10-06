@@ -155,6 +155,7 @@ export class Indicator {
 
     #createItem(row: Row, inert: boolean): InstanceItem {
         return new InstanceItem(row, inert, {
+            home: this.actor.menu.actor,
             text: this.#deps.text,
             state: this.#state,
             perform: (action, key) => {
