@@ -53,6 +53,7 @@ const CONNECTION_FAILURES: readonly IncusError['kind'][] = [
 
 type Outcome<T> = Result<T, IncusError>;
 
+const PROTOCOL_ERROR = 'Incus protocol error';
 const BROKEN_CONTRACT = 'a port broke its contract';
 const UNPRINTABLE = 'unprintable value';
 
@@ -138,7 +139,7 @@ export class Monitor {
             return await this.#perform(action, ref);
         } catch (error) {
             // The log keeps the thrown text; the result deliberately omits it.
-            this.#warnOnce(`${BROKEN_CONTRACT}: ${describeThrown(error)}`);
+            this.#warnOnce(`${PROTOCOL_ERROR}: ${BROKEN_CONTRACT}: ${describeThrown(error)}`);
             return isCancelled(this.#source.signal)
                 ? cancelled()
                 : err({ kind: 'protocol', detail: BROKEN_CONTRACT });
@@ -200,7 +201,7 @@ export class Monitor {
         try {
             call();
         } catch (error) {
-            this.#warnOnce(`${what} threw: ${describeThrown(error)}`);
+            this.#warnOnce(`${PROTOCOL_ERROR}: ${what} threw: ${describeThrown(error)}`);
         }
     }
 
@@ -208,7 +209,31 @@ export class Monitor {
     #warnOnce(text: string): void {
         if (this.#disposed || this.#warned) return;
         this.#warned = true;
-        this.deps.log.warn(userMessage(`Incus protocol error: ${text}`));
+        this.deps.log.warn(userMessage(text));
+    }
+
+    /** Only failures a bug report can act on are logged; the rest are explained in the menu. */
+    #warnDiagnosable(error: IncusError): void {
+        switch (error.kind) {
+            case 'protocol':
+                this.#warnOnce(`${PROTOCOL_ERROR}: ${error.detail}`);
+                break;
+            case 'decode':
+                this.#warnOnce(`Incus decode error: ${error.path}: ${error.detail}`);
+                break;
+            case 'api':
+                this.#warnOnce(`Incus api error ${String(error.code)}: ${error.message}`);
+                break;
+            case 'timeout':
+                this.#warnOnce('Incus request timed out');
+                break;
+            case 'not-installed':
+            case 'permission-denied':
+            case 'unsupported':
+            case 'unreachable':
+            case 'cancelled':
+                break;
+        }
     }
 
     #emit(snapshot: Snapshot): void {
@@ -241,7 +266,7 @@ export class Monitor {
         try {
             succeeded = await this.#attempt(this.#source.signal);
         } catch (error) {
-            this.#warnOnce(`${BROKEN_CONTRACT}: ${describeThrown(error)}`);
+            this.#warnOnce(`${PROTOCOL_ERROR}: ${BROKEN_CONTRACT}: ${describeThrown(error)}`);
             this.#fail({ kind: 'protocol', detail: BROKEN_CONTRACT });
         } finally {
             const rerun = succeeded && this.#rerunRequested;
@@ -302,7 +327,7 @@ export class Monitor {
             this.#client = undefined;
             this.#compatible = false;
         }
-        if (error.kind === 'protocol') this.#warnOnce(error.detail);
+        this.#warnDiagnosable(error);
         let retryInMs = UNSUPPORTED_RETRY_MS;
         if (error.kind !== 'unsupported') {
             retryInMs = this.#backoffMs;
