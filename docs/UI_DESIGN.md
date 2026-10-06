@@ -56,7 +56,10 @@ Expanded row (`PopupSubMenuMenuItem`):
   square corners, which looks like a stray grey bar (it is easy to hit: after Open Shell is
   clicked, the expanded row reopens under a pointer that is still there), so the row's class
   `incus-monitor-terminal` insets that highlight 6 px with a rounded corner, and the padding keeps
-  the text where it was. Expansion never moves key focus; Tab reaches the copy button, Open Shell
+  the text where it was. Stock items take key focus on hover and keep it when the pointer leaves,
+  which left Open Shell (or the header) highlighted over an inert detail row, so on pointer exit
+  the item hands key focus to its submenu actor; a keyboard-focused item the pointer never entered
+  is untouched. Expansion never moves key focus; Tab reaches the copy button, Open Shell
   and the action buttons in turn. The header's grey while expanded is the theme's `:checked` state
   and stays.
 - **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). While the

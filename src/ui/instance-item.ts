@@ -54,6 +54,16 @@ function rule(): PopupMenu.PopupSeparatorMenuItem {
     return separator;
 }
 
+// Stock menu items take key focus when the pointer enters and keep it when it leaves, so the
+// highlight would linger on a row until another focusable item is hovered. A leave event comes
+// from the pointer only: an item focused with the keyboard that the pointer never entered stays put.
+function releaseFocusOnLeave(item: PopupMenu.PopupBaseMenuItem, home: St.Widget): void {
+    item.connect('leave-event', () => {
+        if (global.stage.key_focus === item) home.grab_key_focus();
+        return Clutter.EVENT_PROPAGATE;
+    });
+}
+
 /** A fixed-width cell with its text on the right, so values do not shift the columns. */
 function cell(text: St.Label, styleClass: string): St.BoxLayout {
     text.x_expand = true;
@@ -111,6 +121,8 @@ export class InstanceItem {
         this.#terminal = new PopupMenu.PopupMenuItem('');
         this.#terminal.add_style_class_name('incus-monitor-terminal');
         this.#buildHeader();
+        releaseFocusOnLeave(this.item, this.item.menu.actor);
+        releaseFocusOnLeave(this.#terminal, this.item.menu.actor);
         this.#buildDetails();
         this.#buildActions();
         this.#dot.connect('notify::mapped', () => {
