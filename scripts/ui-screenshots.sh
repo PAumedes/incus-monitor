@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Screenshots of the open menu with a row expanded, from a throwaway headless GNOME Shell.
 #
-# usage: scripts/ui-screenshots.sh [--scheme light|dark] [--out DIR] [--rows name1,name2] [--vm NAME]
+# usage: scripts/ui-screenshots.sh [--scheme light|dark] [--out DIR] [--rows name1,name2] [--vm NAME] [--restart]
 #   --scheme  colour scheme of the throwaway session (default light)
 #   --out     where the PNGs and diagnostics.txt go (default build/screenshots)
 #   --rows    instance names to expand (default: the first row)
 #   --vm      run inside this Incus desktop VM as its "ubuntu" user, with the zip pushed in
+#   --restart also restart each --rows instance from the keyboard and log key focus (use throwaway rows)
 #   --zip     extension zip to use (default: the one `make zip` builds; set by --vm inside the VM)
 #
 # Per row it writes <scheme>-<row>-rest.png (expanded), -hover.png (pointer over the first action)
@@ -23,13 +24,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-scheme=light out=build/screenshots rows= vm= zip=
+scheme=light out=build/screenshots rows= vm= zip= restart=
 while (($#)); do
     case $1 in
         --scheme) scheme=${2:?--scheme needs light or dark}; shift 2 ;;
         --out) out=${2:?--out needs a directory}; shift 2 ;;
         --rows) rows=${2:?--rows needs a comma-separated list}; shift 2 ;;
         --vm) vm=${2:?--vm needs an instance name}; shift 2 ;;
+        --restart) restart=1; shift ;;
         --zip) zip=${2:?--zip needs a file}; shift 2 ;;
         *) echo "unknown option: $1 (see the header of $0)" >&2; exit 2 ;;
     esac
@@ -48,7 +50,7 @@ if [[ -n $vm ]]; then
     incus file push -r scripts/ui-screenshots scripts/ui-screenshots.sh "$vm$work/scripts/" >/dev/null
     incus exec "$vm" -- chown -R ubuntu:ubuntu "$work"
     incus exec "$vm" -- runuser -u ubuntu -- env HOME=/home/ubuntu XDG_RUNTIME_DIR=/run/user/1000 \
-        "$work/scripts/ui-screenshots.sh" --scheme "$scheme" ${rows:+--rows "$rows"} \
+        "$work/scripts/ui-screenshots.sh" --scheme "$scheme" ${rows:+--rows "$rows"} ${restart:+--restart} \
         --zip "$work/extension.zip" --out "$work/out" </dev/null
     mkdir -p "$out"
     pull=$(mktemp -d)
@@ -96,7 +98,7 @@ fi
 
 export XDG_DATA_HOME=$root/data XDG_CONFIG_HOME=$root/config DCONF_PROFILE=$profile
 export SESSION_MODE=$session_mode GTK_THEME_NAME=$gtk_theme SCHEME=$scheme UUID=$uuid HELPER=$helper
-export LOG=$log SHOT_DIR=$out SHOT_PREFIX="$scheme-" SHOT_ROWS=$rows
+export LOG=$log SHOT_DIR=$out SHOT_PREFIX="$scheme-" SHOT_ROWS=$rows SHOT_RESTART=$restart
 
 dbus-run-session -- bash -c '
     set -euo pipefail
