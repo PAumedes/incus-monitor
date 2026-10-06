@@ -148,6 +148,8 @@ whenever this list changes.
   `project=` targets `default` and fails with `error_code: 500`, `"User does not have permissions
 for project \"default\""` (fixture `6.0/error-forbidden-project.json`). Always use
   `all-projects=true` for listing and an explicit `project=` for everything else.
+  **Incus 7.0.1 differs:** the same request returns HTTP 200 with an empty list
+  (`7.0/error-forbidden-project.json`), so an empty `default` project is not proof of an error.
 - `state.disk` is `{}` on the `dir` storage driver. Treat disk usage as optional.
 - `memory.usage_peak` and `swap_usage_peak` are `0` on cgroup v2 hosts. Do not display them.
 - `started_at` is RFC 3339 with nanoseconds and a numeric offset. `Date.parse` truncates to

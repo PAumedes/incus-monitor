@@ -15,8 +15,11 @@ trap 'rm -f "$profile" "$log"' EXIT
 printf 'user-db:incus_monitor_smoke\n' >"$profile"
 
 # Match the real desktop: on Ubuntu the "ubuntu" session mode adds the dock, Yaru and AppIndicators.
+# The mode loads the Yaru theme, and the Shell aborts at start-up when that package is missing.
 session_mode=user
-[[ -f /usr/share/gnome-shell/modes/ubuntu.json ]] && session_mode=ubuntu
+if [[ -f /usr/share/gnome-shell/modes/ubuntu.json && -f /usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource ]]; then
+    session_mode=ubuntu
+fi
 export SESSION_MODE=$session_mode
 
 export DCONF_PROFILE=$profile UUID=$uuid LOG=$log
@@ -26,19 +29,31 @@ dbus-run-session -- bash -c '
     gsettings set org.gnome.shell enabled-extensions "[\"$UUID\"]"
     gnome-shell --headless --wayland --no-x11 --virtual-monitor 1280x800 --mode="$SESSION_MODE" >"$LOG" 2>&1 &
     shell=$!
-    trap "kill $shell 2>/dev/null || true; wait $shell 2>/dev/null || true" EXIT
+    # A Shell that is slow to quit must not hold the script: ask politely, then force it.
+    stop_shell() {
+        kill $shell 2>/dev/null || return 0
+        for _ in $(seq 20); do kill -0 $shell 2>/dev/null || break; sleep 0.25; done
+        kill -9 $shell 2>/dev/null || true
+        wait $shell 2>/dev/null || true
+    }
+    trap stop_shell EXIT
 
+    # GNOME 47+ serves the extensions API as its own bus name; 46 serves it from org.gnome.Shell.
+    bus=org.gnome.Shell.Extensions path=/org/gnome/Shell/Extensions
     call() {
-        gdbus call --session --timeout 2 --dest org.gnome.Shell.Extensions \
-            --object-path /org/gnome/Shell/Extensions --method "org.gnome.Shell.Extensions.$1" "$UUID"
+        gdbus call --session --timeout 2 --dest "$bus" \
+            --object-path "$path" --method "org.gnome.Shell.Extensions.$1" "$UUID"
     }
     # GNOME Shell ExtensionState: 1 = ACTIVE (named ENABLED before GNOME 47).
     state() { call GetExtensionInfo | grep -oE "'\''state'\'': <[0-9.]+>" | grep -oE "[0-9]+" | head -1; }
     errors() { call GetExtensionErrors; }
 
     for _ in $(seq 60); do
-        s=$(state 2>/dev/null || true)
-        [[ -n $s ]] && break
+        for target in "org.gnome.Shell.Extensions /org/gnome/Shell/Extensions" "org.gnome.Shell /org/gnome/Shell"; do
+            read -r bus path <<<"$target"
+            s=$(state 2>/dev/null || true)
+            [[ -n $s ]] && break 2
+        done
         sleep 0.5
     done
     echo "state after start: ${s:-unknown}"

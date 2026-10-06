@@ -1,10 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-import { readdirSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { decodeInstances, decodeServer } from '../../../../src/core/incus/decode.js';
 import type { Instance } from '../../../../src/core/incus/models.js';
-import { address, instanceJson, nic, readFixture, withNetwork, withState } from '../../builders.js';
+import {
+    address,
+    FIXTURE_SERIES,
+    instanceJson,
+    nic,
+    RECORDED_INSTANCES,
+    readFixture,
+    withNetwork,
+    withState,
+} from '../../builders.js';
 import type { Json } from '../../builders.js';
 
 const STARTED_AT_MS = Date.parse('2026-10-05T00:54:39.144Z');
@@ -130,18 +139,12 @@ describe('decodeServer', () => {
     });
 });
 
-const SERIES = readdirSync(new URL('../../../fixtures/incus/', import.meta.url), {
-    withFileTypes: true,
-})
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name);
-
 describe('recorded fixtures of every series', () => {
     it('has at least one series', () => {
-        expect(SERIES.length).toBeGreaterThan(0);
+        expect(FIXTURE_SERIES.length).toBeGreaterThan(0);
     });
 
-    describe.each(SERIES)('series %s', series => {
+    describe.each(FIXTURE_SERIES)('series %s', series => {
         const has = (name: string): boolean =>
             existsSync(new URL(`../../../fixtures/incus/${series}/${name}.json`, import.meta.url));
 
@@ -156,6 +159,18 @@ describe('recorded fixtures of every series', () => {
             },
         );
     });
+});
+
+describe.each(FIXTURE_SERIES)('decodeInstances: recorded %s fixtures', series => {
+    it.each(['instances-recursion1', 'instances-recursion2'])(
+        'yields the recorded names, types and statuses from %s',
+        name => {
+            const result = decodeInstances(readFixture(series, name).metadata);
+            expect(result.ok && result.value.map(i => [i.name, i.type, i.status])).toStrictEqual(
+                RECORDED_INSTANCES[series],
+            );
+        },
+    );
 });
 
 describe('decodeInstances: recorded fixtures', () => {

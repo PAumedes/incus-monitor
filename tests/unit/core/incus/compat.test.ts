@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { REQUIRED_EXTENSIONS, checkCompat } from '../../../../src/core/incus/compat.js';
 import { decodeServer } from '../../../../src/core/incus/decode.js';
 import type { Server } from '../../../../src/core/incus/models.js';
-import { readFixture } from '../../builders.js';
+import { FIXTURE_SERIES, readFixture } from '../../builders.js';
 
 const DOCUMENTED = [
     'instance_all_projects',
@@ -88,14 +87,8 @@ describe('checkCompat', () => {
     });
 });
 
-const SERIES = readdirSync(new URL('../../../fixtures/incus/', import.meta.url), {
-    withFileTypes: true,
-})
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name);
-
 describe('recorded server fixtures', () => {
-    it.each(SERIES)('series %s passes the compatibility gate', series => {
+    it.each(FIXTURE_SERIES)('series %s passes the compatibility gate', series => {
         const decoded = decodeServer(readFixture(series, 'server').metadata);
         if (!decoded.ok) throw new Error('fixture failed to decode');
         expect(checkCompat(decoded.value).ok).toBe(true);

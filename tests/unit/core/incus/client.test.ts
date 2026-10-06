@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { CancelSource } from '../../../../src/core/cancel.js';
@@ -7,11 +6,10 @@ import type { IncusError } from '../../../../src/core/errors.js';
 import { IncusClient } from '../../../../src/core/incus/client.js';
 import type { InstanceAction } from '../../../../src/core/incus/actions.js';
 import { FakeTransport, type Reply } from '../../fakes/transport.js';
+import { FIXTURE_SERIES, RECORDED_INSTANCES, readRecorded } from '../../builders.js';
 
-function fixtureReply(name: string): Reply {
-    const url = new URL(`../../../fixtures/incus/6.0/${name}.json`, import.meta.url);
-    // Test-only cast: fixtures are trusted, recorded files.
-    const f = JSON.parse(readFileSync(url, 'utf8')) as { http_status: number; body: unknown };
+function fixtureReply(name: string, series = '6.0'): Reply {
+    const f = readRecorded(series, name);
     return { status: f.http_status, body: JSON.stringify(f.body) };
 }
 
@@ -44,27 +42,34 @@ function operation(statusCode: unknown, err = ''): Reply {
 const NEVER = new CancelSource().signal;
 const OPERATION = { path: OP_PATH, project: 'user-1000' };
 
-describe('IncusClient.server', () => {
+describe.each(FIXTURE_SERIES)('IncusClient.server with the %s fixtures', series => {
     it('requests GET /1.0 and decodes the recorded server fixture', async () => {
-        const transport = new FakeTransport({ 'GET /1.0': fixtureReply('server') });
+        const transport = new FakeTransport({ 'GET /1.0': fixtureReply('server', series) });
         const result = await new IncusClient(transport).server(NEVER);
         expect(transport.requests).toStrictEqual([{ method: 'GET', path: '/1.0' }]);
         expect(result.ok && result.value.apiExtensions.size).toBeGreaterThan(0);
     });
 
-    it('passes the api error of an error envelope through', async () => {
-        const reply = fixtureReply('error-forbidden-project');
-        const result = await new IncusClient(new FakeTransport({ 'GET /1.0': reply })).server(
-            NEVER,
-        );
-        expect(result).toEqual({
-            ok: false,
-            error: {
-                kind: 'api',
-                code: 500,
-                message: 'User does not have permissions for project "default"',
-            },
-        });
+    it('treats the recorded forbidden-project exchange as the fixture shows', async () => {
+        const recorded = readRecorded(series, 'error-forbidden-project');
+        const reply = fixtureReply('error-forbidden-project', series);
+        const transport = new FakeTransport({ 'GET /1.0': reply });
+        const result = await new IncusClient(transport).server(NEVER);
+        if (recorded.http_status >= 400) {
+            // 6.0.5 refuses the incus-user socket's default project with a 500.
+            expect(result).toEqual({
+                ok: false,
+                error: {
+                    kind: 'api',
+                    code: 500,
+                    message: 'User does not have permissions for project "default"',
+                },
+            });
+        } else {
+            // 7.0.1 answers 200 with an empty list instead of an error, so the
+            // fixture is a successful sync reply that is not a server.
+            expect(!result.ok && result.error.kind).toBe('decode');
+        }
     });
 
     it('returns a decode error when the metadata is not a server', async () => {
@@ -105,7 +110,7 @@ describe('IncusClient list calls given an async envelope', () => {
     });
 });
 
-describe('IncusClient.instances', () => {
+describe.each(FIXTURE_SERIES)('IncusClient.instances with the %s fixtures', series => {
     it.each([
         [false, 'recursion=1', 'instances-recursion1', false],
         [true, 'recursion=2', 'instances-recursion2', true],
@@ -113,7 +118,7 @@ describe('IncusClient.instances', () => {
         'withState %s requests %s and decodes the fixture',
         async (withState, query, fixture, hasState) => {
             const key = `GET /1.0/instances?all-projects=true&${query}`;
-            const transport = new FakeTransport({ [key]: fixtureReply(fixture) });
+            const transport = new FakeTransport({ [key]: fixtureReply(fixture, series) });
             const result = await new IncusClient(transport).instances(withState, NEVER);
             expect(transport.requests).toStrictEqual([
                 { method: 'GET', path: `/1.0/instances?all-projects=true&${query}` },
@@ -121,6 +126,38 @@ describe('IncusClient.instances', () => {
             expect(result.ok && result.value.length).toBeGreaterThan(0);
             expect(result.ok && result.value.every(i => (i.state !== null) === hasState)).toBe(
                 true,
+            );
+        },
+    );
+
+    it('lists the recorded forbidden-project exchange as the fixture shows', async () => {
+        const recorded = readRecorded(series, 'error-forbidden-project');
+        const key = 'GET /1.0/instances?all-projects=true&recursion=1';
+        const reply = fixtureReply('error-forbidden-project', series);
+        const result = await new IncusClient(new FakeTransport({ [key]: reply })).instances(
+            false,
+            NEVER,
+        );
+        if (recorded.http_status >= 400) {
+            // 6.0.5 refuses the incus-user socket's default project with a 500.
+            expect(!result.ok && result.error.kind === 'api' && result.error.code).toBe(500);
+        } else {
+            // 7.0.1 answers 200 with an empty list instead of an error.
+            expect(result).toEqual({ ok: true, value: [] });
+        }
+    });
+
+    it.each([
+        ['instances-recursion1', 'recursion=1', false],
+        ['instances-recursion2', 'recursion=2', true],
+    ])(
+        'decodes the names, types and statuses recorded in %s',
+        async (fixture, query, withState) => {
+            const key = `GET /1.0/instances?all-projects=true&${query}`;
+            const transport = new FakeTransport({ [key]: fixtureReply(fixture, series) });
+            const result = await new IncusClient(transport).instances(withState, NEVER);
+            expect(result.ok && result.value.map(i => [i.name, i.type, i.status])).toStrictEqual(
+                RECORDED_INSTANCES[series],
             );
         },
     );
@@ -292,8 +329,10 @@ describe('IncusClient.changeState', () => {
         expect(!result.ok && result.error.kind).toBe('protocol');
     });
 
-    it('passes the not-found api error through', async () => {
-        const transport = new FakeTransport({ [STATE_KEY]: fixtureReply('error-not-found') });
+    it.each(FIXTURE_SERIES)('passes the %s not-found api error through', async series => {
+        const transport = new FakeTransport({
+            [STATE_KEY]: fixtureReply('error-not-found', series),
+        });
         const result = await new IncusClient(transport).changeState(REF, 'start', NEVER);
         expect(!result.ok && result.error.kind === 'api' && result.error.code).toBe(404);
     });

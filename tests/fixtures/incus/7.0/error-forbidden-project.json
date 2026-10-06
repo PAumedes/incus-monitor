@@ -1,0 +1,13 @@
+{
+  "request": "/1.0/instances?recursion=1",
+  "http_status": 200,
+  "body": {
+    "type": "sync",
+    "status": "Success",
+    "status_code": 200,
+    "operation": "",
+    "error_code": 0,
+    "error": "",
+    "metadata": []
+  }
+}
