@@ -7,8 +7,10 @@ import { GioSocketProbe } from '../../src/adapters/socket-probe.js';
 import type { SocketAccess } from '../../src/core/ports.js';
 import { CancelSource } from '../../src/core/cancel.js';
 import { FakeServer } from './fake-server.js';
-import { assert, test } from './harness.js';
-import { collectingWarnings, withTempDir, writeFile } from './support.js';
+import { assert, test, testSkipIf } from './harness.js';
+import { RUNNING_AS_ROOT, collectingWarnings, withTempDir, writeFile } from './support.js';
+
+const testUnlessRoot = testSkipIf(RUNNING_AS_ROOT, 'running as root, permissions are not enforced');
 
 const idle = (): Promise<void> => Promise.resolve();
 
@@ -37,7 +39,7 @@ test('probe: it does not connect to the socket', () =>
         }
     }));
 
-test('probe: a socket without write permission is denied', () =>
+testUnlessRoot('probe: a socket without write permission is denied', () =>
     withTempDir(async dir => {
         const server = FakeServer.listen(`${dir}/unix.socket`, idle);
         try {
@@ -46,9 +48,10 @@ test('probe: a socket without write permission is denied', () =>
         } finally {
             server.stop();
         }
-    }));
+    }),
+);
 
-test('probe: a socket inside an inaccessible directory is denied', () =>
+testUnlessRoot('probe: a socket inside an inaccessible directory is denied', () =>
     withTempDir(async dir => {
         const server = FakeServer.listen(`${dir}/unix.socket`, idle);
         try {
@@ -58,7 +61,8 @@ test('probe: a socket inside an inaccessible directory is denied', () =>
             GLib.chmod(dir, 0o700);
             server.stop();
         }
-    }));
+    }),
+);
 
 test('probe: a missing file is missing and logs nothing', () =>
     withTempDir(async dir => {

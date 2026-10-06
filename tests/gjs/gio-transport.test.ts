@@ -18,15 +18,18 @@ import type { HttpRequest } from '../../src/core/http/request.js';
 import type { Result } from '../../src/core/result.js';
 import type { HttpResponse } from '../../src/core/http/response.js';
 import { FakeServer, response, type Script } from './fake-server.js';
-import { assert, test } from './harness.js';
+import { assert, test, testSkipIf } from './harness.js';
 import {
     CountingSignal,
+    RUNNING_AS_ROOT,
     collectingWarnings,
     eventually,
     sleep,
     trackingSources,
     withTempDir,
 } from './support.js';
+
+const testUnlessRoot = testSkipIf(RUNNING_AS_ROOT, 'running as root, permissions are not enforced');
 
 const GET_LIST: HttpRequest = { method: 'GET', path: '/1.0/instances' };
 const JSON_OK = '{"type":"sync","status":"Success","status_code":200,"metadata":[]}';
@@ -343,7 +346,7 @@ test('transport: a missing parent directory is not-installed', async () => {
     assert.equal(timeoutKind(result), 'not-installed');
 });
 
-test('transport: a socket the user may not open is permission-denied', () =>
+testUnlessRoot('transport: a socket the user may not open is permission-denied', () =>
     withServer(answer(response(JSON_OK)), async (server, dir) => {
         GLib.chmod(`${dir}/unix.socket`, 0o000);
         const result = await new GioTransport(server.path).request(
@@ -352,7 +355,8 @@ test('transport: a socket the user may not open is permission-denied', () =>
         );
         assert.equal(timeoutKind(result), 'permission-denied');
         assert.equal(server.connections, 0);
-    }));
+    }),
+);
 
 test('transport: a socket file with no listener is unreachable', () =>
     withServer(answer(response(JSON_OK)), async server => {

@@ -168,9 +168,10 @@ async function write(
     data: Uint8Array,
     cancellable: Gio.Cancellable,
 ): Promise<void> {
-    const whole = GLib.Bytes.new(data);
     for (let sent = 0; sent < data.length;) {
-        const chunk = GLib.Bytes.new_from_bytes(whole, sent, data.length - sent);
+        // A fresh copy of the unsent tail: GLib.Bytes.new_from_bytes is absent from GJS 1.80, and
+        // a short write is rare, so the copy happens once in practice.
+        const chunk = GLib.Bytes.new(data.subarray(sent));
         sent += await output.write_bytes_async(chunk, GLib.PRIORITY_DEFAULT, cancellable);
     }
 }
