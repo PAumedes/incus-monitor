@@ -18,11 +18,22 @@ command -v remote-viewer >/dev/null || { echo "Install virt-viewer for the VM co
 uuid=$(python3 -c 'import json; print(json.load(open("data/metadata.json"))["uuid"])')
 vm="imon-desktop-${release//./}"
 
+# The agent starts a few seconds after the VM; a bounded wait turns a hang into a clear error.
+wait_for_agent() {
+    local i
+    for ((i = 0; i < 100; i++)); do
+        incus exec "$vm" -- true </dev/null 2>/dev/null && return 0
+        sleep 3
+    done
+    echo "The agent of $vm did not come up within 5 minutes" >&2
+    return 1
+}
+
 if ! incus info "$vm" >/dev/null 2>&1; then
     incus launch "images:ubuntu/$release/desktop" "$vm" --vm \
         --config limits.cpu=2 --config limits.memory=4GiB --device root,size=20GiB </dev/null
     echo "Waiting for the VM agent…"
-    until incus exec "$vm" -- true 2>/dev/null; do sleep 3; done
+    wait_for_agent
     incus exec "$vm" -- cloud-init status --wait >/dev/null 2>&1 || true
 
     # Incus inside the VM gives the extension something to show. 24.04's archive only has
@@ -40,15 +51,23 @@ if ! incus info "$vm" >/dev/null 2>&1; then
         incus admin init --minimal
         usermod -aG incus-admin ubuntu
         incus launch images:alpine/edge demo
+        # Throwaway local test VM: a known password lets you log in at the GDM prompt.
+        echo ubuntu:ubuntu | chpasswd
     "
+elif [[ $(incus list "$vm" --format csv --columns s </dev/null) == STOPPED ]]; then
+    incus start "$vm" </dev/null
+    echo "Waiting for the VM agent…"
+    wait_for_agent
 fi
 
 incus file push "$deb" "$vm/tmp/extension.deb"
+# A per-user copy shadows /usr/share, so an old one would keep showing stale files.
 incus exec "$vm" -- bash -euo pipefail -c "
+    rm -rf -- \"/home/ubuntu/.local/share/gnome-shell/extensions/${uuid:?}\"
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --reinstall /tmp/extension.deb
     sudo -u ubuntu dbus-run-session gsettings set org.gnome.shell enabled-extensions \"['$uuid']\"
 "
 incus restart "$vm"
 
-echo "Opening the console of $vm (GNOME on Ubuntu $release). Log in as 'ubuntu'."
+echo "Opening the console of $vm (GNOME on Ubuntu $release). Log in as ubuntu / ubuntu."
 exec incus console "$vm" --type=vga
