@@ -2,7 +2,8 @@
 // Development tool, never packaged: drives the Incus Monitor menu in a throwaway Shell and writes
 // one PNG plus a diagnostics line block per scenario. Configured by scripts/ui-screenshots.sh
 // through SHOT_DIR, SHOT_PREFIX and SHOT_ROWS (comma-separated row names; empty means the first row).
-// Scenarios: rest (row expanded), hover (pointer over the first action) and tab (reached with the
+// Scenarios: rest (row expanded), hover (pointer over the first action), leave and leave-header
+// (pointer moved from Open Shell or the header on to an inert detail row) and tab (reached with the
 // keyboard, then Tab). It reaches into the extension's menu items, so it breaks with the UI on purpose.
 /* global global, log */
 import Clutter from 'gi://Clutter';
@@ -13,7 +14,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const TARGET = 'incus-monitor@patricioaumedes';
-const SCENARIOS = ['rest', 'hover', 'tab'];
+const SCENARIOS = ['rest', 'hover', 'leave', 'leave-header', 'tab'];
 
 const env = name => GLib.getenv(name) ?? '';
 const now = () => GLib.get_monotonic_time();
@@ -142,11 +143,21 @@ export default class ScreenshotsExtension extends Extension {
                     row.menu.open(false);
                     await sleep(2000);
                     // The first plain item in the expanded row is the Open Shell action.
-                    const action = row.menu
-                        ._getMenuItems()
-                        .find(i => i.constructor.name === 'PopupMenuItem');
-                    if (scenario === 'hover' && action) {
+                    const action =
+                        scenario === 'leave-header'
+                            ? row
+                            : row.menu
+                                  ._getMenuItems()
+                                  .find(i => i.constructor.name === 'PopupMenuItem');
+                    if (scenario !== 'rest' && action) {
                         pointer.notify_absolute_motion(now(), ...center(action));
+                        await sleep(600);
+                    }
+                    if (scenario.startsWith('leave')) {
+                        pointer.notify_absolute_motion(
+                            now(),
+                            ...center(row.menu._getMenuItems()[0]),
+                        );
                         await sleep(600);
                     }
                 }
@@ -158,6 +169,12 @@ export default class ScreenshotsExtension extends Extension {
                 for (const item of row.menu._getMenuItems()) diagnostics.push(describe(item));
 
                 await screenshot(`${dir}/${prefix}${name}-${scenario}.png`);
+
+                if (scenario.startsWith('leave')) {
+                    // Keyboard navigation must still start somewhere sensible after the pointer left.
+                    await press(Clutter.KEY_Down);
+                    diagnostics.push(`${name}/${scenario}: key focus after Down: ${focus()}`);
+                }
             }
         }
 

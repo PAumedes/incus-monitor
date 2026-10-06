@@ -10,7 +10,8 @@
 #   --zip     extension zip to use (default: the one `make zip` builds; set by --vm inside the VM)
 #
 # Per row it writes <scheme>-<row>-rest.png (expanded), -hover.png (pointer over the first action)
-# and -tab.png (reached with the keyboard, then Tab), plus <scheme>-diagnostics.txt with the focus
+# -leave.png and -leave-header.png (pointer moved on to an inert detail row, which must clear the
+# highlight) and -tab.png (reached with the keyboard, then Tab), plus <scheme>-diagnostics.txt with the focus
 # and geometry of the row's items.
 #
 # Known limitation: synthetic clicks were not delivered on GNOME 46 (the 24.04 VM) in earlier

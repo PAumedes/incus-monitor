@@ -67,7 +67,7 @@ A non-reactive `PopupBaseMenuItem` is drawn insensitive (faded). For inert rows 
 
 `make screenshots` (`scripts/ui-screenshots.sh`) boots a throwaway headless Shell, expands a row and
 writes PNGs plus `<scheme>-diagnostics.txt` (focus, pseudo-classes, geometry) to `build/screenshots/`:
-resting, hover on Open Shell, keyboard Tab. Options: `SCHEME=light|dark`, `VM=imon-desktop-2404` (runs
+resting, hover on Open Shell, pointer leaving it (and the header) for a detail row, keyboard Tab. Options: `SCHEME=light|dark`, `VM=imon-desktop-2404` (runs
 inside the 46 VM and pulls the PNGs back); the script takes `--rows name1,name2` and `--out DIR`.
 Run it light and dark on `make demo` data, and view the PNGs with the Read tool. No click scenario:
 synthetic clicks were not delivered on 46. It does not touch your session or `~/.local`.
