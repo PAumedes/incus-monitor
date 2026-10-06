@@ -56,6 +56,9 @@ export function readFile(path: string): string | undefined {
     return new TextDecoder().decode(bytes);
 }
 
+/** True when permission bits are bypassed (root), so "permission denied" cases cannot be built. */
+export const RUNNING_AS_ROOT = /^Uid:\s+\d+\s+0\s/m.test(readFile('/proc/self/status') ?? '');
+
 /** Waits until `check` returns a value, polling on the main loop. Fails after `timeoutMs`. */
 export async function eventually<T>(check: () => T | undefined, timeoutMs = 5000): Promise<T> {
     const deadline = GLib.get_monotonic_time() + timeoutMs * 1000;

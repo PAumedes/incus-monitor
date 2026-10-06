@@ -7,12 +7,20 @@ type TestFn = () => void | Promise<void>;
 interface TestCase {
     readonly name: string;
     readonly fn: TestFn;
+    readonly skip?: string;
 }
 
 const registry: TestCase[] = [];
 
 export function test(name: string, fn: TestFn): void {
     registry.push({ name, fn });
+}
+
+/** Registers a test that is reported as skipped, with the reason, when `condition` is true. */
+export function testSkipIf(condition: boolean, reason: string): typeof test {
+    return (name, fn) => {
+        registry.push(condition ? { name, fn, skip: reason } : { name, fn });
+    };
 }
 
 export class AssertionError extends Error {
@@ -64,7 +72,11 @@ export const assert: Assert = {
 /** Runs every registered test sequentially and returns the number of failures. */
 export async function runRegistered(): Promise<number> {
     let failures = 0;
-    for (const { name, fn } of registry) {
+    for (const { name, fn, skip } of registry) {
+        if (skip !== undefined) {
+            print(`ok - ${name} # SKIP ${skip}`);
+            continue;
+        }
         try {
             await fn();
             print(`ok - ${name}`);
