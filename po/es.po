@@ -1,0 +1,285 @@
+# Spanish translation for incus-monitor@patricioaumedes.
+# Copyright (C) 2026 Patricio
+# This file is distributed under the same license as the incus-monitor@patricioaumedes package.
+# Patricio <patricioaumedes@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: incus-monitor@patricioaumedes\n"
+"Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
+"POT-Creation-Date: 2026-10-05 22:35-0300\n"
+"PO-Revision-Date: 2026-10-05 22:30-0300\n"
+"Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Translators: SI byte units, 1000-based. The space in the msgid is a no-break space
+#. (U+00A0); keep it.
+msgid "{value} B"
+msgstr "{value} B"
+
+#. Translators: SI kilobytes.
+msgid "{value} kB"
+msgstr "{value} kB"
+
+#. Translators: SI megabytes.
+msgid "{value} MB"
+msgstr "{value} MB"
+
+#. Translators: SI gigabytes.
+msgid "{value} GB"
+msgstr "{value} GB"
+
+#. Translators: SI terabytes.
+msgid "{value} TB"
+msgstr "{value} TB"
+
+#. Translators: bytes per second. The space in the msgid is a no-break space (U+00A0);
+#. keep it.
+msgid "{value} B/s"
+msgstr "{value} B/s"
+
+#. Translators: kilobytes per second.
+msgid "{value} kB/s"
+msgstr "{value} kB/s"
+
+#. Translators: megabytes per second.
+msgid "{value} MB/s"
+msgstr "{value} MB/s"
+
+#. Translators: gigabytes per second.
+msgid "{value} GB/s"
+msgstr "{value} GB/s"
+
+#. Translators: terabytes per second.
+msgid "{value} TB/s"
+msgstr "{value} TB/s"
+
+msgid "{days} d {hours} h"
+msgstr "{days} d {hours} h"
+
+#. Translators: duration; d = days (an abbreviation, it does not inflect).
+msgid "{days} d"
+msgstr "{days} d"
+
+msgid "{hours} h {minutes} min"
+msgstr "{hours} h {minutes} min"
+
+#. Translators: duration; h = hours (an abbreviation, it does not inflect).
+msgid "{hours} h"
+msgstr "{hours} h"
+
+#. Translators: duration; min = minutes (an abbreviation, it does not inflect).
+msgid "{minutes} min"
+msgstr "{minutes} min"
+
+#. Translators: uptime shorter than one minute; min = minutes.
+msgid "< 1 min"
+msgstr "< 1 min"
+
+msgid "Memory"
+msgstr "Memoria"
+
+msgid "Network"
+msgstr "Red"
+
+msgid "Address"
+msgstr "Dirección"
+
+msgid "Uptime"
+msgstr "Tiempo activo"
+
+msgid "Retry"
+msgstr "Reintentar"
+
+msgid "Refresh"
+msgstr "Actualizar"
+
+msgid "Preferences"
+msgstr "Preferencias"
+
+#. Translators: accessible name of the button that copies an address; {address} is an
+#. IP address such as "10.0.3.15".
+msgid "Copy address {address}"
+msgstr "Copiar dirección {address}"
+
+msgid "Not available"
+msgstr "No disponible"
+
+msgid "Download not available"
+msgstr "Descarga no disponible"
+
+msgid "Upload not available"
+msgstr "Subida no disponible"
+
+#. Translators: spoken network download rate; {rate} is a speed such as "1.5 MB/s".
+msgid "Download {rate}"
+msgstr "Descarga {rate}"
+
+#. Translators: spoken network upload rate; {rate} is a speed such as "1.5 MB/s".
+msgid "Upload {rate}"
+msgstr "Subida {rate}"
+
+#. Translators: {name} is a row's spoken name such as "web01, Running"; the row is busy.
+msgid "{name}, working"
+msgstr "{name}, en proceso"
+
+msgid "Could not open a terminal"
+msgstr "No se pudo abrir una terminal"
+
+msgid "No supported terminal was found. Set one in the preferences."
+msgstr ""
+"No se encontró ninguna terminal compatible. Configure una en las "
+"preferencias."
+
+msgid "The terminal could not be started."
+msgstr "No se pudo iniciar la terminal."
+
+msgid "This instance name cannot be used to open a terminal"
+msgstr "Este nombre de instancia no se puede usar para abrir una terminal"
+
+msgid "Running"
+msgstr "En ejecución"
+
+msgid "Frozen"
+msgstr "Congelada"
+
+msgid "Stopped"
+msgstr "Detenida"
+
+msgid "Busy"
+msgstr "Ocupada"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Unknown"
+msgstr "Desconocida"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Restart"
+msgstr "Reiniciar"
+
+msgid "Freeze"
+msgstr "Congelar"
+
+msgid "Unfreeze"
+msgstr "Descongelar"
+
+msgid "Open Shell"
+msgstr "Abrir shell"
+
+msgid "Open Console"
+msgstr "Abrir consola"
+
+#. Translators: {used} and {total} are memory sizes such as "246 MB" and "2.0 GB".
+msgid "{used} of {total}"
+msgstr "{used} de {total}"
+
+#. Translators: {name} is an instance, {project} its Incus project, {status} its state.
+msgid "{name}, {project}, {status}"
+msgstr "{name}, {project}, {status}"
+
+#. Translators: {name} is an instance and {status} its state, such as "Running".
+msgid "{name}, {status}"
+msgstr "{name}, {status}"
+
+msgid "Incus"
+msgstr "Incus"
+
+msgid "Incus is not installed"
+msgstr "Incus no está instalado"
+
+msgid "Add your user to the \"incus\" group, then log in again"
+msgstr "Añada su usuario al grupo «incus» y vuelva a iniciar sesión"
+
+msgid "Incus 6.0 or later is required"
+msgstr "Se requiere Incus 6.0 o posterior"
+
+msgid "Incus is not responding"
+msgstr "Incus no responde"
+
+#. Translators: {problem} is why Incus cannot be used, such as "Incus is not installed".
+msgid "Incus, {problem}"
+msgstr "Incus, {problem}"
+
+#. Translators: {count} is the number of running instances. Both forms are identical on purpose:
+#. the count is a placeholder, so the plural form changes nothing in the sentence.
+msgid "Incus, {count} running"
+msgid_plural "Incus, {count} running"
+msgstr[0] "Incus, {count} en ejecución"
+msgstr[1] "Incus, {count} en ejecución"
+
+msgid "No instances"
+msgstr "Sin instancias"
+
+msgid "No running instances"
+msgstr "Sin instancias en ejecución"
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not start {name}"
+msgstr "No se pudo iniciar {name}"
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not stop {name}"
+msgstr "No se pudo detener {name}"
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not restart {name}"
+msgstr "No se pudo reiniciar {name}"
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not freeze {name}"
+msgstr "No se pudo congelar {name}"
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not unfreeze {name}"
+msgstr "No se pudo descongelar {name}"
+
+msgid "The action failed"
+msgstr "La acción ha fallado"
+
+msgid "This action is not available for this instance"
+msgstr "Esta acción no está disponible para esta instancia"
+
+msgid "Could not confirm the result. Check the instance state."
+msgstr ""
+"No se pudo confirmar el resultado. Compruebe el estado de la instancia."
+
+#. Translators: label of the setting for seconds between refreshes while the menu is closed.
+msgid "Refresh interval"
+msgstr "Intervalo de actualización"
+
+#. Translators: unit hint for the refresh interval row.
+msgid "Seconds between updates while the menu is closed"
+msgstr "Segundos entre actualizaciones mientras el menú está cerrado"
+
+#. Translators: label of a switch; the count is shown next to the panel icon.
+msgid "Show running count"
+msgstr "Mostrar número de instancias en ejecución"
+
+#. Translators: label of a switch that lists stopped instances in the menu.
+msgid "Show stopped instances"
+msgstr "Mostrar instancias detenidas"
+
+#. Translators: label of the entry for the terminal program used to open a shell.
+msgid "Terminal"
+msgstr "Terminal"
+
+#. Translators: explains the Terminal field; leave it empty to detect a terminal.
+msgid "Program then arguments separated by spaces. Empty detects a terminal."
+msgstr ""
+"Programa y argumentos separados por espacios. Si se deja vacío, se detecta "
+"una terminal."
+
+msgid "Incus Monitor"
+msgstr "Incus Monitor"

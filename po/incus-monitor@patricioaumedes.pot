@@ -1,0 +1,279 @@
+# Translation template for incus-monitor@patricioaumedes.
+# Copyright (C) 2026 Patricio
+# This file is distributed under the same license as the incus-monitor@patricioaumedes package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: incus-monitor@patricioaumedes\n"
+"Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
+"POT-Creation-Date: 2026-10-05 22:36-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
+"Language-Team: \n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Translators: SI byte units, 1000-based. The space in the msgid is a no-break space
+#. (U+00A0); keep it.
+msgid "{value} B"
+msgstr ""
+
+#. Translators: SI kilobytes.
+msgid "{value} kB"
+msgstr ""
+
+#. Translators: SI megabytes.
+msgid "{value} MB"
+msgstr ""
+
+#. Translators: SI gigabytes.
+msgid "{value} GB"
+msgstr ""
+
+#. Translators: SI terabytes.
+msgid "{value} TB"
+msgstr ""
+
+#. Translators: bytes per second. The space in the msgid is a no-break space (U+00A0);
+#. keep it.
+msgid "{value} B/s"
+msgstr ""
+
+#. Translators: kilobytes per second.
+msgid "{value} kB/s"
+msgstr ""
+
+#. Translators: megabytes per second.
+msgid "{value} MB/s"
+msgstr ""
+
+#. Translators: gigabytes per second.
+msgid "{value} GB/s"
+msgstr ""
+
+#. Translators: terabytes per second.
+msgid "{value} TB/s"
+msgstr ""
+
+msgid "{days} d {hours} h"
+msgstr ""
+
+#. Translators: duration; d = days (an abbreviation, it does not inflect).
+msgid "{days} d"
+msgstr ""
+
+msgid "{hours} h {minutes} min"
+msgstr ""
+
+#. Translators: duration; h = hours (an abbreviation, it does not inflect).
+msgid "{hours} h"
+msgstr ""
+
+#. Translators: duration; min = minutes (an abbreviation, it does not inflect).
+msgid "{minutes} min"
+msgstr ""
+
+#. Translators: uptime shorter than one minute; min = minutes.
+msgid "< 1 min"
+msgstr ""
+
+msgid "Memory"
+msgstr ""
+
+msgid "Network"
+msgstr ""
+
+msgid "Address"
+msgstr ""
+
+msgid "Uptime"
+msgstr ""
+
+msgid "Retry"
+msgstr ""
+
+msgid "Refresh"
+msgstr ""
+
+msgid "Preferences"
+msgstr ""
+
+#. Translators: accessible name of the button that copies an address; {address} is an
+#. IP address such as "10.0.3.15".
+msgid "Copy address {address}"
+msgstr ""
+
+msgid "Not available"
+msgstr ""
+
+msgid "Download not available"
+msgstr ""
+
+msgid "Upload not available"
+msgstr ""
+
+#. Translators: spoken network download rate; {rate} is a speed such as "1.5 MB/s".
+msgid "Download {rate}"
+msgstr ""
+
+#. Translators: spoken network upload rate; {rate} is a speed such as "1.5 MB/s".
+msgid "Upload {rate}"
+msgstr ""
+
+#. Translators: {name} is a row's spoken name such as "web01, Running"; the row is busy.
+msgid "{name}, working"
+msgstr ""
+
+msgid "Could not open a terminal"
+msgstr ""
+
+msgid "No supported terminal was found. Set one in the preferences."
+msgstr ""
+
+msgid "The terminal could not be started."
+msgstr ""
+
+msgid "This instance name cannot be used to open a terminal"
+msgstr ""
+
+msgid "Running"
+msgstr ""
+
+msgid "Frozen"
+msgstr ""
+
+msgid "Stopped"
+msgstr ""
+
+msgid "Busy"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "Unknown"
+msgstr ""
+
+msgid "Start"
+msgstr ""
+
+msgid "Stop"
+msgstr ""
+
+msgid "Restart"
+msgstr ""
+
+msgid "Freeze"
+msgstr ""
+
+msgid "Unfreeze"
+msgstr ""
+
+msgid "Open Shell"
+msgstr ""
+
+msgid "Open Console"
+msgstr ""
+
+#. Translators: {used} and {total} are memory sizes such as "246 MB" and "2.0 GB".
+msgid "{used} of {total}"
+msgstr ""
+
+#. Translators: {name} is an instance, {project} its Incus project, {status} its state.
+msgid "{name}, {project}, {status}"
+msgstr ""
+
+#. Translators: {name} is an instance and {status} its state, such as "Running".
+msgid "{name}, {status}"
+msgstr ""
+
+msgid "Incus"
+msgstr ""
+
+msgid "Incus is not installed"
+msgstr ""
+
+msgid "Add your user to the \"incus\" group, then log in again"
+msgstr ""
+
+msgid "Incus 6.0 or later is required"
+msgstr ""
+
+msgid "Incus is not responding"
+msgstr ""
+
+#. Translators: {problem} is why Incus cannot be used, such as "Incus is not installed".
+msgid "Incus, {problem}"
+msgstr ""
+
+#. Translators: {count} is the number of running instances. Both forms are identical on purpose:
+#. the count is a placeholder, so the plural form changes nothing in the sentence.
+msgid "Incus, {count} running"
+msgid_plural "Incus, {count} running"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "No instances"
+msgstr ""
+
+msgid "No running instances"
+msgstr ""
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not start {name}"
+msgstr ""
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not stop {name}"
+msgstr ""
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not restart {name}"
+msgstr ""
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not freeze {name}"
+msgstr ""
+
+#. Translators: {name} is the instance the action was run on.
+msgid "Could not unfreeze {name}"
+msgstr ""
+
+msgid "The action failed"
+msgstr ""
+
+msgid "This action is not available for this instance"
+msgstr ""
+
+msgid "Could not confirm the result. Check the instance state."
+msgstr ""
+
+#. Translators: label of the setting for seconds between refreshes while the menu is closed.
+msgid "Refresh interval"
+msgstr ""
+
+#. Translators: unit hint for the refresh interval row.
+msgid "Seconds between updates while the menu is closed"
+msgstr ""
+
+#. Translators: label of a switch; the count is shown next to the panel icon.
+msgid "Show running count"
+msgstr ""
+
+#. Translators: label of a switch that lists stopped instances in the menu.
+msgid "Show stopped instances"
+msgstr ""
+
+#. Translators: label of the entry for the terminal program used to open a shell.
+msgid "Terminal"
+msgstr ""
+
+#. Translators: explains the Terminal field; leave it empty to detect a terminal.
+msgid "Program then arguments separated by spaces. Empty detects a terminal."
+msgstr ""
+
+msgid "Incus Monitor"
+msgstr ""
