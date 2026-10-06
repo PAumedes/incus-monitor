@@ -20,6 +20,20 @@ export function intlLocale(locale: string): string {
     }
 }
 
+// Placeholders are substituted after translation so translators can reorder them. The function
+// form of replace keeps `$` in a value from being read as a pattern.
+// Own keys only, so a placeholder named like an Object.prototype member stays literal.
+export function fill(template: string, values: Readonly<Record<string, string>>): string {
+    return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+        Object.hasOwn(values, key) ? (values[key] ?? match) : match,
+    );
+}
+
+/** A whole number in the user's digits, for text that sits next to translated words. */
+export function formatCount(value: number, locale: string): string {
+    return new Intl.NumberFormat(intlLocale(locale)).format(value);
+}
+
 function isDisplayable(value: number): boolean {
     return Number.isFinite(value) && value >= 0;
 }

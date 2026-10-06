@@ -491,6 +491,14 @@ describe('present: panel', () => {
         expect(vm.panelAccessibleName).toBe(expected.replace('{count}', String(count)));
     });
 
+    it('formats the running count with the locale digits', () => {
+        const vm = listOf(
+            ready(instance({ name: 'a' }), instance({ name: 'b' }), instance({ name: 'c' })),
+            { locale: 'ar-EG' },
+        );
+        expect(vm.panelAccessibleName).toBe('many:Incus, \u0663 running');
+    });
+
     it('uses the normal icon for a list', () => {
         expect(listOf(ready(instance())).panelIcon).toBe(PANEL);
     });
