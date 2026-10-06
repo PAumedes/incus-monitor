@@ -399,9 +399,58 @@ describe('decodeInstances: state', () => {
         expect(stateOf(withState({ processes: -1 })).processes).toBe(-1);
     });
 
+    it('keeps the -1 "not available" CPU usage of a VM whose agent does not report it', () => {
+        // Recorded from an Alpine VM on Incus 6.0.5; a missing metric must not fail the list.
+        const raw = withState({
+            cpu: { usage: -1, allocated_time: 0 },
+            disk: null,
+            memory: { usage: 105_111_552, usage_peak: 0, total: 352_096_256 },
+            network: {
+                eth0: nic([address('inet', '192.0.2.9')], 'broadcast', {
+                    bytes_received: 1500,
+                    bytes_sent: 900,
+                }),
+            },
+            processes: 10,
+            started_at: '2026-10-06T00:31:18.305880709-03:00',
+        });
+        expect(stateOf(raw)).toStrictEqual({
+            cpuUsageNs: -1,
+            cpuAllocatedNsPerSecond: 0,
+            memoryUsageBytes: 105_111_552,
+            memoryTotalBytes: 352_096_256,
+            rxBytes: 1500,
+            txBytes: 900,
+            processes: 10,
+            startedAtMs: Date.parse('2026-10-06T03:31:18.305Z'),
+            primaryAddress: '192.0.2.9',
+        });
+    });
+
+    it('still decodes the other instances of a list that has one VM without CPU usage', () => {
+        const vm = instanceJson({ name: 'vm1', type: 'virtual-machine' });
+        (vm['state'] as Json)['cpu'] = { usage: -1, allocated_time: 0 };
+        const result = decodeInstances([instanceJson(), vm]);
+        expect(result.ok && result.value.map(i => i.name)).toEqual(['web01', 'vm1']);
+    });
+
+    it('rejects a NaN CPU usage even though -1 is accepted', () => {
+        const raw = instanceJson();
+        raw['state'] = { ...(raw['state'] as Json), cpu: { usage: Number.NaN } };
+        expect(decodeError([raw]).path).toBe('metadata[0].state.cpu.usage');
+    });
+
+    it('accepts a null disk section', () => {
+        expect(stateOf(withState({ disk: null })).memoryUsageBytes).toBe(246_255_616);
+    });
+
     it.each<[string, Json, string]>([
         ['cpu.usage is a string', { cpu: { usage: '1' } }, 'metadata[0].state.cpu.usage'],
-        ['cpu.usage is negative', { cpu: { usage: -1 } }, 'metadata[0].state.cpu.usage'],
+        [
+            'cpu.usage is below the -1 sentinel',
+            { cpu: { usage: -2 } },
+            'metadata[0].state.cpu.usage',
+        ],
         [
             'cpu.allocated_time is negative',
             { cpu: { allocated_time: -5 } },

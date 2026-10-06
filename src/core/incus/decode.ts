@@ -22,6 +22,8 @@ interface Limits {
 }
 
 const COUNTER = { min: 0, fallback: 0 };
+// Incus reports -1 for CPU usage when a VM has no running agent.
+const CPU_USAGE = { min: -1, fallback: 0 };
 
 const IP_ADDRESS = /^[0-9A-Fa-f.:]{2,45}$/;
 const VERSION = /^[\x20-\x7e]{0,32}$/;
@@ -84,8 +86,13 @@ function optionalCount(parent: Fields, key: string, path: string): Decoded<numbe
     return value;
 }
 
-function numberPair(parent: Fields, path: string, keys: readonly [string, string]): Decoded<Pair> {
-    const first = optionalNumber(parent, keys[0], path, COUNTER);
+function numberPair(
+    parent: Fields,
+    path: string,
+    keys: readonly [string, string],
+    firstRule: Limits,
+): Decoded<Pair> {
+    const first = optionalNumber(parent, keys[0], path, firstRule);
     if (!first.ok) return first;
     const second = optionalNumber(parent, keys[1], path, COUNTER);
     return second.ok ? ok([first.value, second.value]) : second;
@@ -97,9 +104,10 @@ function sectionPair(
     key: string,
     path: string,
     keys: readonly [string, string],
+    firstRule: Limits = COUNTER,
 ): Decoded<Pair> {
     const section = optionalRecord(parent, key, path);
-    return section.ok ? numberPair(section.value, `${path}.${key}`, keys) : section;
+    return section.ok ? numberPair(section.value, `${path}.${key}`, keys, firstRule) : section;
 }
 
 function decodeStartedAt(parent: Fields, path: string): Decoded<number | null> {
@@ -167,7 +175,7 @@ function decodeNetwork(state: Fields, path: string): Decoded<Network> {
 }
 
 function decodeState(state: Fields, path: string): Decoded<InstanceState> {
-    const cpu = sectionPair(state, 'cpu', path, ['usage', 'allocated_time']);
+    const cpu = sectionPair(state, 'cpu', path, ['usage', 'allocated_time'], CPU_USAGE);
     if (!cpu.ok) return cpu;
     const memory = sectionPair(state, 'memory', path, ['usage', 'total']);
     if (!memory.ok) return memory;

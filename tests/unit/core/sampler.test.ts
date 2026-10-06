@@ -69,6 +69,20 @@ describe('Sampler', () => {
         expect(rates.network).toEqual({ rxBytesPerSecond: 12_000, txBytesPerSecond: 0 });
     });
 
+    it('has no CPU percent while usage is not available, but keeps network rates and other rows', () => {
+        const sampler = new Sampler();
+        const vm = { project: 'default', name: 'vm1' };
+        const unavailable = (rx: number): Instance =>
+            running(-1, rx, { cpuAllocatedNsPerSecond: 2_000_000_000 }, vm);
+        sampler.record(at(0, running(1_000_000_000, 0), unavailable(0)));
+        sampler.record(at(1000, running(1_160_000_000, 0), unavailable(500)));
+        expect(sampler.rates(vm)).toEqual({
+            cpuPercent: null,
+            network: { rxBytesPerSecond: 500, txBytesPerSecond: 0 },
+        });
+        expect(sampler.rates(WEB).cpuPercent).toBeCloseTo(4);
+    });
+
     it('ignores a repeated snapshot of the same instant, so presenting twice is stable', () => {
         const sampler = new Sampler();
         sampler.record(at(0, running(1_000_000_000, 0)));

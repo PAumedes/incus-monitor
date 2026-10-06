@@ -11,7 +11,7 @@ export interface InstanceRef {
 
 /**
  * `cpuAllocatedNsPerSecond` and `memoryTotalBytes` are 0 when Incus does not report them;
- * `processes` is -1 when not reported (a VM without an agent).
+ * `processes` and `cpuUsageNs` are -1 when not available (a VM without an agent).
  */
 export interface InstanceState {
     readonly cpuUsageNs: number;

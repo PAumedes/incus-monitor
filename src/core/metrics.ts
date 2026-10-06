@@ -30,6 +30,7 @@ function comparableSeconds(previous: Sample, current: Sample): number | null {
 
 export function cpuPercent(previous: Sample | undefined, current: Sample): number | null {
     if (previous === undefined) return null;
+    if (previous.state.cpuUsageNs < 0 || current.state.cpuUsageNs < 0) return null;
     const seconds = comparableSeconds(previous, current);
     if (seconds === null) return null;
     const allocated = current.state.cpuAllocatedNsPerSecond;

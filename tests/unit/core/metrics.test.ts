@@ -28,6 +28,16 @@ function sample(atMs: number, overrides: Partial<InstanceState> = {}): Sample {
 }
 
 describe('cpuPercent', () => {
+    it.each([
+        ['both samples', -1, -1],
+        ['the current sample only', 1_000_000_000, -1],
+        ['the previous sample only', -1, 1_000_000_000],
+    ])('is unknown when CPU usage is not available in %s', (_label, before, after) => {
+        const previous = sample(0, { cpuUsageNs: before });
+        const current = sample(2 * SECOND_MS, { cpuUsageNs: after });
+        expect(cpuPercent(previous, current)).toBeNull();
+    });
+
     it('divides the used CPU time by the time available across all allocated CPUs', () => {
         // 0.4 s used over 2 s on 2 CPUs (4 s available) is 10 %.
         const previous = sample(0, { cpuUsageNs: 1_000_000_000 });
