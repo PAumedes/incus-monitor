@@ -1015,10 +1015,11 @@ describe('Monitor logging', () => {
     });
 
     it.each<IncusError>([
-        { kind: 'timeout' },
         { kind: 'unreachable' },
-        { kind: 'api', code: 500, message: 'secret detail' },
-        { kind: 'decode', path: '$.x', detail: 'secret detail' },
+        { kind: 'not-installed' },
+        { kind: 'permission-denied' },
+        { kind: 'cancelled' },
+        { kind: 'unsupported', reason: 'secret detail' },
     ])('does not log a $kind failure', async error => {
         const { client, clock, log, monitor } = await started();
         client.instances.mockResolvedValueOnce(err(error));
@@ -1026,6 +1027,103 @@ describe('Monitor logging', () => {
         await flush();
         expect(monitor.state.kind).toBe('failed');
         expect(log.warn).not.toHaveBeenCalled();
+    });
+
+    describe('diagnosable failures', () => {
+        const decode: IncusError = {
+            kind: 'decode',
+            path: 'metadata[4].state.cpu.usage',
+            detail: 'expected a finite number >= 0',
+        };
+        const api: IncusError = { kind: 'api', code: 500, message: 'storage pool is busy' };
+        const timeout: IncusError = { kind: 'timeout' };
+
+        const failWith = async (error: IncusError) => {
+            const world = await started();
+            world.client.instances.mockResolvedValueOnce(err(error));
+            world.clock.advance(10_000);
+            await flush();
+            return world;
+        };
+
+        it('logs a decode failure with its path and detail', async () => {
+            const { log } = await failWith(decode);
+            expect(log.warn).toHaveBeenCalledTimes(1);
+            expect(log.warn.mock.calls[0]?.[0]).toBe(
+                'Incus decode error: metadata[4].state.cpu.usage: expected a finite number >= 0',
+            );
+        });
+
+        it('logs an api failure with its code and daemon message', async () => {
+            const { log } = await failWith(api);
+            expect(log.warn).toHaveBeenCalledTimes(1);
+            const message = log.warn.mock.calls[0]?.[0] ?? '';
+            expect(message).toContain('Incus api error');
+            expect(message).toContain('500');
+            expect(message).toContain('storage pool is busy');
+        });
+
+        it('logs a timeout as a request that timed out', async () => {
+            const { log } = await failWith(timeout);
+            expect(log.warn).toHaveBeenCalledTimes(1);
+            expect(log.warn.mock.calls[0]?.[0]).toMatch(/timed out/);
+        });
+
+        it.each([decode, api, timeout])(
+            'logs a repeated $kind failure only once per episode',
+            async error => {
+                const { log, client, clock } = await failWith(error);
+                client.instances.mockResolvedValue(err(error));
+                for (const delay of [2000, 4000, 8000]) {
+                    clock.advance(delay);
+                    await flush();
+                }
+                expect(log.warn).toHaveBeenCalledTimes(1);
+            },
+        );
+
+        it.each([decode, api, timeout])(
+            'logs a $kind failure again after a success',
+            async error => {
+                const { log, client, clock } = await failWith(error);
+                clock.advance(2000);
+                await flush();
+                client.instances.mockResolvedValueOnce(err(error));
+                clock.advance(10_000);
+                await flush();
+                expect(log.warn).toHaveBeenCalledTimes(2);
+            },
+        );
+
+        it('logs one warning when different diagnosable kinds follow each other', async () => {
+            const { log, client, clock } = await failWith(decode);
+            client.instances.mockResolvedValue(err(api));
+            clock.advance(2000);
+            await flush();
+            expect(log.warn).toHaveBeenCalledTimes(1);
+        });
+
+        it.each([
+            ['decode path', { ...decode, path: 'HOSTILE‮\n\u001b[31m' }],
+            ['decode detail', { ...decode, detail: 'HOSTILE‮\n\u001b[31m' }],
+            ['api message', { ...api, message: 'HOSTILE‮\n\u001b[31m' }],
+        ] as const)('blanks control characters in a hostile %s', async (_name, error) => {
+            const { log } = await failWith(error);
+            const message = log.warn.mock.calls[0]?.[0] ?? '';
+            expect(message).toContain('HOSTILE');
+            expect(message).not.toMatch(/[\p{C}\u2028\u2029]/u);
+        });
+
+        it.each([
+            ['decode path', { ...decode, path: 'x'.repeat(1e5) }],
+            ['decode detail', { ...decode, detail: 'x'.repeat(1e5) }],
+            ['api message', { ...api, message: 'x'.repeat(1e5) }],
+        ] as const)('caps a very long %s', async (_name, error) => {
+            const { log } = await failWith(error);
+            const message = log.warn.mock.calls[0]?.[0] ?? '';
+            expect(message).toContain('xxx');
+            expect(message.length).toBeLessThanOrEqual(500 + 100);
+        });
     });
 });
 
