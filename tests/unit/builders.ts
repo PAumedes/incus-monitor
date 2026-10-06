@@ -1,8 +1,39 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 /** Loose JSON used to build wire-format variations; decoders receive it as `unknown`. */
 export type Json = Record<string, unknown>;
+
+/** Every Incus series that has recorded fixtures on disk (6.0, 7.0, ...). */
+export const FIXTURE_SERIES: readonly string[] = readdirSync(
+    new URL('../fixtures/incus/', import.meta.url),
+    { withFileTypes: true },
+)
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name);
+
+/** name, type and status of every instance in the recorded instance lists, by series. */
+export const RECORDED_INSTANCES: Readonly<
+    Record<string, readonly (readonly [string, string, string])[]>
+> = {
+    '6.0': [['web01', 'container', 'running']],
+    '7.0': [
+        ['c1', 'container', 'running'],
+        ['frozen1', 'container', 'frozen'],
+        ['stopped1', 'container', 'stopped'],
+        ['v1', 'virtual-machine', 'running'],
+    ],
+};
+
+/** A recorded exchange exactly as captured: HTTP status plus the decoded JSON body. */
+export function readRecorded(
+    series: string,
+    name: string,
+): { readonly http_status: number; readonly body: unknown } {
+    const url = new URL(`../fixtures/incus/${series}/${name}.json`, import.meta.url);
+    // Test-only cast: fixtures are trusted, recorded files.
+    return JSON.parse(readFileSync(url, 'utf8')) as { http_status: number; body: unknown };
+}
 
 export function readFixture(series: string, name: string): { readonly metadata: unknown } {
     const url = new URL(`../fixtures/incus/${series}/${name}.json`, import.meta.url);

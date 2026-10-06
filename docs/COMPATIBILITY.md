@@ -17,7 +17,7 @@ Ubuntu 22.04 (GNOME 42) is **out of scope**: it predates ES-module extensions. S
 | ------------ | ---------------------------------------- | --------------------------------------- |
 | 6.0 LTS      | Supported                                | Fixtures: `tests/fixtures/incus/6.0/`   |
 | 6.x feature  | Best effort                              | Same API surface as 6.0 plus extensions |
-| 7.0 LTS      | Supported                                | Fixtures to be recorded (ROADMAP T14)   |
+| 7.0 LTS      | Supported                                | Fixtures: `tests/fixtures/incus/7.0/`   |
 | < 6.0        | Rejected at runtime with a clear message |                                         |
 
 ## GNOME Shell API ledger

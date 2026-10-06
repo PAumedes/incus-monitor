@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { decodeEnvelope } from '../../../../src/core/incus/envelope.js';
 import type { Envelope } from '../../../../src/core/incus/envelope.js';
 import type { IncusError } from '../../../../src/core/errors.js';
+import { FIXTURE_SERIES, readRecorded } from '../../builders.js';
 import type { Result } from '../../../../src/core/result.js';
 
 interface Fixture {
@@ -12,14 +12,13 @@ interface Fixture {
     readonly body: { readonly metadata: unknown };
 }
 
-function fixture(name: string): Fixture {
-    const url = new URL(`../../../fixtures/incus/6.0/${name}.json`, import.meta.url);
+function fixture(name: string, series = '6.0'): Fixture {
     // Test-only cast: fixtures are trusted, recorded files.
-    return JSON.parse(readFileSync(url, 'utf8')) as Fixture;
+    return readRecorded(series, name) as Fixture;
 }
 
-function decodeFixture(name: string): ReturnType<typeof decodeEnvelope> {
-    const { http_status: status, body } = fixture(name);
+function decodeFixture(name: string, series = '6.0'): ReturnType<typeof decodeEnvelope> {
+    const { http_status: status, body } = fixture(name, series);
     return decodeEnvelope(status, JSON.stringify(body));
 }
 
@@ -45,15 +44,17 @@ function expectProtocol(result: Result<Envelope, IncusError>): void {
 }
 
 describe('decodeEnvelope: sync', () => {
-    it.each(['server', 'instances-recursion1', 'instances-recursion2'])(
-        'decodes the recorded %s fixture with its metadata untouched',
-        name => {
-            expect(decodeFixture(name)).toStrictEqual({
-                ok: true,
-                value: { kind: 'sync', metadata: fixture(name).body.metadata },
-            });
-        },
-    );
+    describe.each(FIXTURE_SERIES)('series %s', series => {
+        it.each(['server', 'instances-recursion1', 'instances-recursion2'])(
+            'decodes the recorded %s fixture with its metadata untouched',
+            name => {
+                expect(decodeFixture(name, series)).toStrictEqual({
+                    ok: true,
+                    value: { kind: 'sync', metadata: fixture(name, series).body.metadata },
+                });
+            },
+        );
+    });
 
     it.each([null, [], [1, 2], {}, 'text'])('passes metadata %j through', metadata => {
         expect(decodeEnvelope(200, syncBody(200, metadata))).toStrictEqual({

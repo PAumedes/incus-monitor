@@ -22,7 +22,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, socket probe, launcher                    | T06, T07   | review |
 | T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | review |
 | T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | review |
-| T14 | Record Incus 7.0 LTS fixtures; contract tests for 6.0 and 7.0                                                | T04        | todo   |
+| T14 | Record Incus 7.0 LTS fixtures; contract tests for 6.0 and 7.0                                                | T04        | review |
 | T15 | i18n: generate `po/` template with `scripts/update-po.sh`, add Spanish translation, check `pack` compiles it | T12, T13   | review |
 | T16 | Manual matrix on GNOME 46 and 50, screenshots, README polish                                                 | T12–T15    | todo   |
 | T17 | Release 1.0.0 ([RELEASING.md](RELEASING.md))                                                                 | T16        | todo   |
