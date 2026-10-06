@@ -80,6 +80,7 @@ export class InstanceItem {
     readonly #uptime = label('incus-monitor-tabular');
     readonly #separator = new PopupMenu.PopupSeparatorMenuItem();
     readonly #terminal: PopupMenu.PopupMenuItem;
+    readonly #buttonsSeparator = new PopupMenu.PopupSeparatorMenuItem();
     readonly #actionsItem = inertItem();
     readonly #actionsBox = new St.BoxLayout({
         x_expand: true,
@@ -124,6 +125,9 @@ export class InstanceItem {
         }
         // Set apart the actions from the details, and never leave a rule with nothing under it.
         this.#separator.visible = row.details !== null && row.actions.length > 0;
+        this.#buttonsSeparator.visible =
+            row.actions.some(a => a.kind === 'terminal') &&
+            row.actions.some(a => a.kind === 'lifecycle');
         for (const button of this.#actionButtons) {
             button.reactive = !inert;
             // A non-reactive button can still be activated from the keyboard while focused.
@@ -192,6 +196,7 @@ export class InstanceItem {
             }
         });
         this.item.menu.addMenuItem(this.#terminal);
+        this.item.menu.addMenuItem(this.#buttonsSeparator);
         this.#actionsItem.add_child(this.#actionsBox);
         this.item.menu.addMenuItem(this.#actionsItem);
     }
