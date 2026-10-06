@@ -58,6 +58,21 @@
     max-width: 24em;
 }
 
+/* Themes inset a rule inside a submenu on one side only; the four-part selector outranks them. */
+.popup-sub-menu .popup-separator-menu-item.incus-monitor-rule:ltr,
+.popup-sub-menu .popup-separator-menu-item.incus-monitor-rule:rtl {
+    margin: 0;
+}
+
+/* Themes paint a submenu item's hover and focus edge to edge with square corners. Inset the
+   highlight like a main-menu row; the padding keeps the text on the detail rows' column. */
+.popup-sub-menu .popup-menu-item.incus-monitor-terminal {
+    margin: 0 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+    border-radius: 8px;
+}
+
 .incus-monitor-actions {
     spacing: 6px;
 }
