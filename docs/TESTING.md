@@ -117,6 +117,10 @@ Checklist:
 - [ ] Lock and unlock the screen: no errors, polling resumes.
 - [ ] Light and dark style, 200 % scaling, large text, keyboard-only navigation, Orca reads the rows.
 - [ ] Preferences open, apply live, and survive a reset.
+- [ ] Tab and arrow keys reach every row, action button and both footer buttons.
+- [ ] Keyboard focus stays put when another row changes state.
+- [ ] With animations disabled, a pending row shows a still, dimmed dot.
+- [ ] A failed action shows a notification, and its daemon text is not in the journal.
 
 ## Troubleshooting
 

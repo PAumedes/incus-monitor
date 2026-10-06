@@ -20,8 +20,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | review |
 | T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | review |
 | T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, socket probe, launcher                    | T06, T07   | review |
-| T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | todo   |
-| T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | todo   |
+| T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | review |
+| T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | review |
 | T14 | Record Incus 7.0 LTS fixtures; contract tests for 6.0 and 7.0                                                | T04        | todo   |
 | T15 | i18n: generate `po/` template with `scripts/update-po.sh`, add Spanish translation, check `pack` compiles it | T12, T13   | todo   |
 | T16 | Manual matrix on GNOME 46 and 50, screenshots, README polish                                                 | T12–T15    | todo   |
@@ -188,9 +188,9 @@ Status: `todo` · `in-progress` · `review` · `done`
     in the details is announced as a translated "Not available", and the spoken download and
     upload text uses a translated template. The instance type is conveyed by the icon only: the
     row's accessible name does not need it.
-  - Deferred: `PresentContext` carries `locale` next to `formatter`; collapse them into one locale
-    object when this task builds the context. If the UI grows `explain` or `performFailure*`,
-    consider moving them to `core/failure-text.ts`.
+  - Deferred to T15: `PresentContext` still carries `locale` next to `formatter`; collapse them into
+    one locale object. The launch-failure text now lives in `core/menu-text.ts`; if `explain` and
+    `performFailure*` follow it, move them to `core/failure-text.ts`.
 - Owns the detail headings and their translations (Memory, Network, Address, Uptime), the Retry,
   Refresh and Preferences buttons, the accessible name of the copy-address button, and the
   spoken download and upload text for the rates.
@@ -213,3 +213,9 @@ Status: `todo` · `in-progress` · `review` · `done`
 
 - Stop on a frozen instance: run it on a throwaway instance you created, and confirm that the
   graceful stop succeeds or that Incus reports an error the notification shows.
+- Nested shell, GNOME 46 and 50, for the UI paths that no test can run: the readout column
+  position in a collapsed row, the pulse while a row is pending and with animations disabled,
+  focus after a state change in another row and after an action settles, Tab and arrow reach of
+  the action and footer buttons, the dim label contrast on light and dark, and a preferences
+  window whose Terminal row keeps no stray apply checkmark. The checklist is in
+  [TESTING.md](TESTING.md#manual-matrix).

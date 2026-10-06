@@ -70,10 +70,14 @@ src/
 │   │   ├── compat.ts       Required api_extensions and supported server versions.
 │   │   └── client.ts       IncusClient: server info, list instances, change state, wait for an operation.
 │   ├── launch.ts           Terminal candidates, detection and argv building for shell/console launches (pure).
+│   ├── terminal-command.ts Terminal setting <-> argv prefix: whitespace split and join (pure).
 │   ├── socket.ts           Socket candidate discovery (system socket, incus-user socket).
 │   ├── sampler.ts          Last two samples per instance; derives CPU % and network rates for the presenter.
 │   ├── metrics.ts          CPU %, memory, network rates from successive samples.
 │   ├── format.ts           Human-readable sizes, rates and durations (locale and gettext injected).
+│   ├── monitor-settings.ts Builds the Monitor's settings: live refresh interval, INCUS_SOCKET override.
+│   ├── menu-state.ts       Pending and expanded rows by key, view-model reuse rules, structural equality.
+│   ├── menu-text.ts        The menu's own translated strings and the spoken forms of readouts.
 │   ├── monitor.ts          State machine + scheduling (idle/slow vs open/fast cadence, back-off), compat check, socket discovery re-run, `perform`.
 │   └── presenter.ts        Snapshot → ViewModel (sorting, labels, available actions, empty/error states).
 ├── adapters/
@@ -104,8 +108,9 @@ update this file in the same merge request.
      seconds (default 10). This is enough for states and the running count.
    - **menu open**: refresh immediately, then `recursion=2` every 2 s for live metrics.
    - **on error**: exponential back-off (2 s → 60 s), reset on the first success.
-3. Each poll produces an immutable `Snapshot`. The presenter maps it to a `ViewModel`, and the UI
-   re-renders only the rows whose view model changed (structural equality).
+3. Each poll produces an immutable `Snapshot`. The presenter maps it to a `ViewModel`. The UI keeps
+   one item per row key, updates it only when its row changed (structural equality), and rebuilds
+   nothing else. Presentation settings re-present the last snapshot without a new request.
 4. User intents (start, stop, …) go to `Monitor.perform(action, instance)`. It issues
    `PUT …/state`, waits for the operation, refreshes, and returns a `Result` that the UI turns
    into a notification on failure.

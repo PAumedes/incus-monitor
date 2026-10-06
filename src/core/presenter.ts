@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import type { IncusError } from './errors.js';
-import { DASH, intlLocale, type Formatter, type Translate } from './format.js';
+import { DASH, fill, formatCount, intlLocale, type Formatter, type Translate } from './format.js';
 import { actionsFor, type InstanceAction } from './incus/actions.js';
 import {
     instanceKey,
@@ -111,15 +111,6 @@ const STATUS_ORDER: Readonly<Record<InstanceStatus, number>> = {
     error: 4,
     busy: 5,
 };
-
-// Placeholders are substituted after translation so translators can reorder them. The function
-// form of replace keeps `$` in a value from being read as a pattern.
-// Own keys only, so a placeholder named like an Object.prototype member stays literal.
-function fill(template: string, values: Readonly<Record<string, string>>): string {
-    return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-        Object.hasOwn(values, key) ? (values[key] ?? match) : match,
-    );
-}
 
 function statusText(status: InstanceStatus, _: Translate): string {
     switch (status) {
@@ -322,7 +313,7 @@ function runningPanelName(runningCount: number, ctx: PresentContext): string {
     // Translators: {count} is the number of running instances. Both forms are identical on purpose:
     // the count is a placeholder, so the plural form changes nothing in the sentence.
     const template = ngettext('Incus, {count} running', 'Incus, {count} running', runningCount);
-    return fill(template, { count: String(runningCount) });
+    return fill(template, { count: formatCount(runningCount, ctx.locale) });
 }
 
 function listOf(instances: readonly Instance[], ctx: PresentContext): ViewModel {

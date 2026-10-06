@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import { describe, expect, it } from 'vitest';
 
-import { Formatter } from '../../../src/core/format.js';
+import { fill, Formatter } from '../../../src/core/format.js';
 
 const identity = (msgid: string): string => msgid;
 const en = new Formatter('en', identity);
@@ -211,5 +211,31 @@ describe('Formatter unit templates with unknown placeholders', () => {
             msgid.replace(NBSP, ' ') === '{value} MB' ? '{constructor}: {value}' : msgid,
         );
         expect(hostile.bytes(220_441_536)).toBe('{constructor}: 220');
+    });
+});
+
+describe('fill', () => {
+    it('substitutes a placeholder', () => {
+        expect(fill('Hello {name}', { name: 'web01' })).toBe('Hello web01');
+    });
+
+    it('substitutes a repeated placeholder each time', () => {
+        expect(fill('{x}-{x}', { x: 'a' })).toBe('a-a');
+    });
+
+    it('keeps replacement patterns like $& literal', () => {
+        expect(fill('<{x}>', { x: '$& $1 $$' })).toBe('<$& $1 $$>');
+    });
+
+    it('does not expand a placeholder that appears inside a value', () => {
+        expect(fill('{a} {b}', { a: '{b}', b: 'B' })).toBe('{b} B');
+    });
+
+    it('leaves a placeholder with no value as it is', () => {
+        expect(fill('{missing} {x}', { x: '1' })).toBe('{missing} 1');
+    });
+
+    it('does not read Object.prototype members as values', () => {
+        expect(fill('{toString} {constructor}', {})).toBe('{toString} {constructor}');
     });
 });
