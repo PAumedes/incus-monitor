@@ -92,6 +92,9 @@ Notes:
   not delivered on GNOME 46, so there is no click scenario; check the `key focus` line of
   `<scheme>-diagnostics.txt` for hover, leave and keyboard shots (after `leave`, no item may be
   `[focus]`).
+  `--restart` (throwaway rows only, it really restarts them) adds a keyboard scenario: Tab to
+  Restart, Return, then `key focus` right after, while pending and once settled (header while
+  pending, Restart again afterwards).
 - `make demo` creates `imon-demo-*` instances (running, busy, stopped, frozen, a VM) so levels 4b and 5
   show realistic data; `make demo-clean` deletes them and only them.
 - Until ROADMAP task T12, the extension shows only its panel icon (a box), with no menu.

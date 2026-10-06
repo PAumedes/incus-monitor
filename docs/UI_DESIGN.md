@@ -59,7 +59,10 @@ Expanded row (`PopupSubMenuMenuItem`):
   the text where it was. Stock items take key focus on hover and keep it when the pointer leaves,
   which left Open Shell (or the header) highlighted over an inert detail row, so on pointer exit
   the item hands key focus to its submenu actor; a keyboard-focused item the pointer never entered
-  is untouched. Expansion never moves key focus; Tab reaches the copy button, Open Shell
+  is untouched. While a row is pending its buttons stop taking focus, and a focused button would
+  lose key focus to whichever neighbour the Shell version picks (Open Shell on GNOME 46), so the row
+  moves it to its header first and returns it to the same action once the row settles, unless the
+  user moved it meanwhile. Expansion never moves key focus; Tab reaches the copy button, Open Shell
   and the action buttons in turn. The header's grey while expanded is the theme's `:checked` state
   and stays.
 - **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). While the

@@ -4,12 +4,15 @@
 // through SHOT_DIR, SHOT_PREFIX and SHOT_ROWS (comma-separated row names; empty means the first row).
 // Scenarios: rest (row expanded), hover (pointer over the first action), leave and leave-header
 // (pointer moved from Open Shell or the header on to an inert detail row) and tab (reached with the
-// keyboard, then Tab). It reaches into the extension's menu items, so it breaks with the UI on purpose.
+// keyboard, then Tab). With SHOT_RESTART set it also restarts each named row from the keyboard
+// (Tab to Restart, Return) and records key focus right after, while pending and once settled: it
+// really restarts the instance, so name throwaway rows. It reaches into the extension's menu items, so it breaks with the UI on purpose.
 /* global global, log */
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Shell from 'gi://Shell';
+import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -39,6 +42,8 @@ const describe = actor => {
     const pseudo = actor.get_style_pseudo_class?.() ?? '';
     return `${actor.constructor.name} .${actor.style_class ?? ''} [${pseudo}] x=${Math.round(x)} y=${Math.round(y)} w=${Math.round(w)} h=${Math.round(h)} visible=${actor.visible}`;
 };
+
+const descendants = actor => actor.get_children().flatMap(c => [c, ...descendants(c)]);
 
 const menuItems = menu =>
     menu
@@ -175,6 +180,53 @@ export default class ScreenshotsExtension extends Extension {
                     await press(Clutter.KEY_Down);
                     diagnostics.push(`${name}/${scenario}: key focus after Down: ${focus()}`);
                 }
+            }
+        }
+
+        if (env('SHOT_RESTART')) {
+            for (const name of names) {
+                const row = rows.find(r => r.label.text === name);
+                pointer.notify_absolute_motion(now(), 5, 5);
+                indicator.menu.close(false);
+                await sleep(500);
+                indicator.menu.open(false);
+                await sleep(1500);
+                for (const other of rows) other.menu.close(false);
+                await sleep(300);
+                row.menu.open(false);
+                await sleep(2000);
+                // The row rebuilds its buttons when the actions change, so look the button up each time.
+                const findRestart = () =>
+                    descendants(row.menu.actor).find(
+                        a => a instanceof St.Button && a.accessible_name === 'Restart',
+                    );
+                const restart = findRestart();
+                if (!restart) {
+                    diagnostics.push(`${name}/restart: no Restart button (is the row running?)`);
+                    continue;
+                }
+                row.grab_key_focus();
+                let steps = 0;
+                while (global.stage.key_focus !== restart && steps++ < 12)
+                    await press(Clutter.KEY_Tab);
+                diagnostics.push(`${name}/restart: reached Restart after ${steps} Tab presses`);
+                diagnostics.push(`${name}/restart before: ${focus()}`);
+                await press(Clutter.KEY_Return);
+                diagnostics.push(`${name}/restart +400ms: ${focus()}`);
+                await screenshot(`${dir}/${prefix}${name}-restart-pending.png`);
+                // Poll until the buttons take focus again, or give up after 40 s.
+                for (let t = 1; t <= 40; t++) {
+                    await sleep(1000);
+                    diagnostics.push(
+                        `${name}/restart +${t}s: ${focus()} | restart can_focus=${findRestart()?.can_focus}`,
+                    );
+                    if (findRestart()?.can_focus && t >= 3) break;
+                }
+                await sleep(1500);
+                diagnostics.push(`${name}/restart settled: ${focus()}`);
+                await screenshot(`${dir}/${prefix}${name}-restart-settled.png`);
+                await press(Clutter.KEY_Tab);
+                diagnostics.push(`${name}/restart after Tab: ${focus()}`);
             }
         }
 

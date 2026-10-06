@@ -104,7 +104,9 @@ export class InstanceItem {
         x_expand: true,
         style_class: 'incus-monitor-actions',
     });
-    #actionButtons: St.Button[] = [];
+    #actionButtons = new Map<InstanceAction, St.Button>();
+    // The action whose button held key focus when the row went inert, to focus it again afterwards.
+    #returnTo: InstanceAction | null = null;
     #terminalTarget: TerminalTarget | null = null;
     #row: Row | undefined;
     #inert = false;
@@ -137,6 +139,7 @@ export class InstanceItem {
         if (previous !== undefined && this.#inert === inert && structurallyEqual(previous, row)) {
             return;
         }
+        this.#parkFocus(inert);
         this.#row = row;
         this.#inert = inert;
         this.#updateHeader(row);
@@ -149,11 +152,12 @@ export class InstanceItem {
         this.#buttonsSeparator.visible =
             row.actions.some(a => a.kind === 'terminal') &&
             row.actions.some(a => a.kind === 'lifecycle');
-        for (const button of this.#actionButtons) {
+        for (const button of this.#actionButtons.values()) {
             button.reactive = !inert;
             // A non-reactive button can still be activated from the keyboard while focused.
             button.can_focus = !inert;
         }
+        this.#resumeFocus(inert);
         this.#terminal.setSensitive(!inert);
         this.#syncPulse();
     }
@@ -258,11 +262,29 @@ export class InstanceItem {
         setSpoken(this.#uptime, details.uptime);
     }
 
+    // A focused widget that stops being focusable is left to Clutter, and GNOME 46 hands its key
+    // focus to a neighbour (Open Shell) where 50 does not. The header is a stable place to wait.
+    #parkFocus(inert: boolean): void {
+        const focused = global.stage.key_focus;
+        for (const [action, button] of this.#actionButtons) {
+            if (button !== focused) continue;
+            this.#returnTo = action;
+            if (inert) this.item.grab_key_focus();
+        }
+    }
+
+    #resumeFocus(inert: boolean): void {
+        if (inert || this.#returnTo === null) return;
+        if (global.stage.key_focus === this.item)
+            this.#actionButtons.get(this.#returnTo)?.grab_key_focus();
+        this.#returnTo = null;
+    }
+
     #updateActions(row: Row): void {
         const focused = global.stage.key_focus;
-        const hadFocus = this.#actionButtons.some(button => button === focused);
-        for (const button of this.#actionButtons) button.destroy();
-        this.#actionButtons = [];
+        const hadFocus = [...this.#actionButtons.values()].some(button => button === focused);
+        for (const button of this.#actionButtons.values()) button.destroy();
+        this.#actionButtons.clear();
         const terminal = row.actions.find(a => a.kind === 'terminal');
         this.#terminalTarget = terminal?.target ?? null;
         this.#terminal.visible = terminal !== undefined;
@@ -271,7 +293,11 @@ export class InstanceItem {
         this.#actionsItem.visible = lifecycle.length > 0;
         for (const action of lifecycle) this.#addActionButton(action, row.key);
         // The focused button is gone: keep the keyboard user's place instead of dropping it.
-        if (hadFocus) (this.#actionButtons.find(b => b.can_focus) ?? this.item).grab_key_focus();
+        if (hadFocus) (this.#firstFocusable() ?? this.item).grab_key_focus();
+    }
+
+    #firstFocusable(): St.Button | undefined {
+        return [...this.#actionButtons.values()].find(button => button.can_focus);
     }
 
     #addActionButton(action: Extract<RowAction, { kind: 'lifecycle' }>, key: string): void {
@@ -290,7 +316,7 @@ export class InstanceItem {
             if (this.#inert) return;
             this.#deps.perform(action.action, key);
         });
-        this.#actionButtons.push(button);
+        this.#actionButtons.set(action.action, button);
         this.#actionsBox.add_child(button);
     }
 
