@@ -8,7 +8,14 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import type { InstanceAction } from '../core/incus/actions.js';
 import { userMessage } from '../core/incus/validate.js';
-import { listKeys, menuToRender, MenuState, planRows, rowIsInert } from '../core/menu-state.js';
+import {
+    listKeys,
+    menuToRender,
+    MenuState,
+    orderRows,
+    planRows,
+    rowIsInert,
+} from '../core/menu-state.js';
 import type { MenuText } from '../core/menu-text.js';
 import type { Row, TerminalTarget, ViewModel } from '../core/presenter.js';
 
@@ -43,6 +50,8 @@ export class Indicator {
     readonly #items = new Map<string, InstanceItem>();
     #notice: StateItem | undefined;
     #shown: Shown | undefined;
+    #order: readonly string[] = [];
+    #menuOpen = false;
     #warned = false;
     #destroyed = false;
 
@@ -69,7 +78,11 @@ export class Indicator {
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         menu.addMenuItem(footer.item);
         menu.connect('open-state-changed', (_menu: unknown, open: boolean) => {
-            if (!this.#destroyed) deps.onOpenChanged(open);
+            if (this.#destroyed) return;
+            this.#menuOpen = open;
+            // Closing applies the full sort that was held back while the menu was open.
+            if (!open && this.#shown !== undefined) this.#draw(this.#shown);
+            deps.onOpenChanged(open);
         });
     }
 
@@ -114,8 +127,13 @@ export class Indicator {
     #drawRows(rows: readonly Row[]): void {
         const plan = planRows(
             [...this.#items.keys()],
-            rows.map(r => r.key),
+            orderRows(
+                this.#order,
+                rows.map(r => r.key),
+                this.#menuOpen,
+            ),
         );
+        this.#order = plan.order;
         for (const key of plan.destroy) {
             this.#items.get(key)?.destroy();
             this.#items.delete(key);

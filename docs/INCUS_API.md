@@ -111,7 +111,7 @@ explicitly on per-instance calls.
 | `state.cpu.allocated_time` (ns per s) | Number of allocated CPUs × 1e9. Requires `instance_state_cpu_time`. 0 = not reported. |
 | `state.memory.usage`, `.total`        | Memory readout; `total` is the limit or the host total (0 = not reported)             |
 | `state.network.<iface>.counters`      | Rx/Tx rates; skip `loopback` type                                                     |
-| `state.network.<iface>.addresses[]`   | Primary address: first `global` scope, IPv4 preferred                                 |
+| `state.network.<iface>.addresses[]`   | Primary address: first `global` IPv4 (IPv6 is not used)                               |
 | `state.processes`                     | `-1` on a VM means no agent → "Open Console"; absent is treated as `-1`               |
 | `state.started_at`                    | Uptime                                                                                |
 
@@ -157,5 +157,8 @@ for project \"default\""` (fixture `6.0/error-forbidden-project.json`). Always u
 - `started_at` is RFC 3339 with nanoseconds and a numeric offset. `Date.parse` truncates to
   milliseconds, which is fine.
 - Network interface `addresses` on loopback must be ignored when choosing the primary address.
-- **To verify in the manual matrix (T16)**: a graceful `stop` of a frozen instance. The menu
-  offers it, but it must be checked on a throwaway instance you created yourself.
+- A graceful `stop` of a frozen instance can fail with `Failed shutting down instance, status is
+"Running": context deadline exceeded` (seen on Incus 6.0.5 with an Alpine container). Afterwards
+  the instance is still frozen in its cgroup, but Incus reports it as `Running` (status code 103),
+  so a second `pause` answers "already frozen". The menu shows Incus's error text and cannot detect
+  the mismatch.

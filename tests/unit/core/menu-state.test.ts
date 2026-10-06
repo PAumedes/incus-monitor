@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
     listKeys,
     MenuState,
+    orderRows,
     menuToRender,
     planRows,
     rowIsInert,
@@ -276,5 +277,73 @@ describe('MenuState across a notice', () => {
         render(state, list(row({ key: 'default/other' })));
         expect(state.isPending('default/web01')).toBe(false);
         expect(state.isExpanded('default/web01')).toBe(false);
+    });
+});
+
+describe('orderRows', () => {
+    it.each([
+        {
+            name: 'keeps the shown order while the menu is open',
+            prev: ['a', 'b', 'c'],
+            sorted: ['c', 'a', 'b'],
+            open: true,
+            expected: ['a', 'b', 'c'],
+        },
+        {
+            name: 'applies the sorted order when the menu is closed',
+            prev: ['a', 'b', 'c'],
+            sorted: ['c', 'a', 'b'],
+            open: false,
+            expected: ['c', 'a', 'b'],
+        },
+        {
+            name: 'puts a new row after the shown ones while open',
+            prev: ['a', 'b'],
+            sorted: ['n', 'a', 'b'],
+            open: true,
+            expected: ['a', 'b', 'n'],
+        },
+        {
+            name: 'sorts several new rows among themselves after the shown ones',
+            prev: ['a', 'b'],
+            sorted: ['n2', 'a', 'n1', 'b'],
+            open: true,
+            expected: ['a', 'b', 'n2', 'n1'],
+        },
+        {
+            name: 'drops a vanished row and keeps the others in place',
+            prev: ['a', 'b', 'c'],
+            sorted: ['c', 'a'],
+            open: true,
+            expected: ['a', 'c'],
+        },
+        {
+            name: 'handles removal, reorder and insertion together',
+            prev: ['a', 'b', 'c'],
+            sorted: ['n', 'c', 'b'],
+            open: true,
+            expected: ['b', 'c', 'n'],
+        },
+        {
+            name: 'lists every row when nothing was shown yet',
+            prev: [],
+            sorted: ['b', 'a'],
+            open: true,
+            expected: ['b', 'a'],
+        },
+        { name: 'empties when all rows vanish', prev: ['a'], sorted: [], open: true, expected: [] },
+        { name: 'is empty for no rows', prev: [], sorted: [], open: false, expected: [] },
+    ])('$name', ({ prev, sorted, open, expected }) => {
+        expect(orderRows(prev, sorted, open)).toEqual(expected);
+    });
+
+    it('does not modify its inputs', () => {
+        const prev = ['a', 'b'];
+        const sorted = ['b', 'a'];
+        orderRows(prev, sorted, true);
+        expect([prev, sorted]).toEqual([
+            ['a', 'b'],
+            ['b', 'a'],
+        ]);
     });
 });

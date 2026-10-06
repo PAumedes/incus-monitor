@@ -89,3 +89,19 @@ export function planRows(previous: readonly string[], next: readonly string[]): 
         order: next,
     };
 }
+
+/**
+ * The on-screen order. While the menu is open, rows already shown keep their place and new rows
+ * go last in sorted order, so a state change never moves a row under the pointer.
+ */
+export function orderRows(
+    previous: readonly string[],
+    sorted: readonly string[],
+    menuOpen: boolean,
+): readonly string[] {
+    if (!menuOpen) return sorted;
+    const listed = new Set(sorted);
+    const kept = previous.filter(key => listed.has(key));
+    const shown = new Set(kept);
+    return [...kept, ...sorted.filter(key => !shown.has(key))];
+}

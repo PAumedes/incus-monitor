@@ -27,7 +27,8 @@ const WEB01_STATE = {
     txBytes: 766,
     processes: 204,
     startedAtMs: STARTED_AT_MS,
-    primaryAddress: '2001:db8::10',
+    // The recorded web01 has only a global IPv6 address, which is not used as the primary one.
+    primaryAddress: null,
 };
 
 function decodeOne(raw: Json): Instance {
@@ -598,9 +599,9 @@ describe('decodeInstances: network totals and primary address', () => {
             a: { type: 'broadcast', counters: {} },
             b: { type: 'broadcast', addresses: null },
             c: nic(odd as Json[]),
-            d: nic([v6]),
+            d: nic([v4]),
         });
-        expect(stateOf(raw).primaryAddress).toBe('2001:db8::10');
+        expect(stateOf(raw).primaryAddress).toBe('192.0.2.10');
     });
 
     it('rejects summed counters that are not finite', () => {
@@ -639,7 +640,7 @@ describe('decodeInstances: network totals and primary address', () => {
 
     it.each<[string, Json, string | null]>([
         ['IPv4 only', { eth0: nic([v4]) }, '192.0.2.10'],
-        ['IPv6 only', { eth0: nic([v6]) }, '2001:db8::10'],
+        ['IPv6 only', { eth0: nic([v6]) }, null],
         ['dual stack, IPv6 listed first', { eth0: nic([v6, v4]) }, '192.0.2.10'],
         ['dual stack across interfaces', { eth0: nic([v6]), eth1: nic([v4]) }, '192.0.2.10'],
         [
@@ -648,20 +649,15 @@ describe('decodeInstances: network totals and primary address', () => {
             '192.0.2.11',
         ],
         [
-            'several IPv6 addresses, first wins',
+            'several IPv6 addresses and no IPv4',
             { eth0: nic([address('inet6', '2001:db8::11'), v6]) },
-            '2001:db8::11',
-        ],
-        [
-            'first IPv6 across interfaces',
-            { eth0: nic([address('inet6', '2001:db8::11')]), eth1: nic([v6]) },
-            '2001:db8::11',
+            null,
         ],
         ['loopback only', { lo: nic([address('inet', '127.0.0.1')], 'loopback') }, null],
         [
             'global address on loopback is ignored',
             { lo: nic([v4], 'loopback'), eth0: nic([v6]) },
-            '2001:db8::10',
+            null,
         ],
         [
             'link and local scopes are ignored',
@@ -688,14 +684,24 @@ describe('decodeInstances: network totals and primary address', () => {
         '<b>1.2.3.4</b>',
         'fe80::1%eth0',
     ])('ignores the malformed address %j without failing', bad => {
-        const raw = withNetwork({ eth0: nic([address('inet', bad), v6]) });
-        expect(stateOf(raw).primaryAddress).toBe('2001:db8::10');
+        const raw = withNetwork({ eth0: nic([address('inet', bad), v4]) });
+        expect(stateOf(raw).primaryAddress).toBe('192.0.2.10');
     });
 
-    it('accepts an IPv6 address of the 45 character maximum', () => {
+    it('accepts an IPv4 address given in the 45 character IPv4-mapped form', () => {
         const max = '0000:0000:0000:0000:0000:ffff:255.255.255.255';
-        const raw = withNetwork({ eth0: nic([address('inet6', max)]) });
+        const raw = withNetwork({ eth0: nic([address('inet', max)]) });
         expect(stateOf(raw).primaryAddress).toBe(max);
+    });
+
+    it('does not fall back to IPv6 when the only IPv4 address is malformed', () => {
+        const raw = withNetwork({ eth0: nic([address('inet', 'not an address'), v6]) });
+        expect(stateOf(raw).primaryAddress).toBeNull();
+    });
+
+    it('keeps the IPv4 address when the IPv6 one is listed first on another interface', () => {
+        const raw = withNetwork({ eth0: nic([v6]), eth1: nic([v4]) });
+        expect(stateOf(raw).primaryAddress).toBe('192.0.2.10');
     });
 });
 

@@ -59,7 +59,9 @@ Expanded row (`PopupSubMenuMenuItem`):
   the text where it was. Expansion never moves key focus; Tab reaches the copy button, Open Shell
   and the action buttons in turn. The header's grey while expanded is the theme's `:checked` state
   and stays.
-- **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). The
+- **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). While the
+  menu is open, rows keep their position and new rows are appended, so a state change never moves a
+  row under the pointer; closing the menu applies the full order. The
   project name is shown in dim text only when instances come from more than one project.
 - **Status dot**: an 8 px circle styled by CSS class (`running`, `frozen`, `stopped`, `error`). The
   row's accessible name always includes the state in words.
