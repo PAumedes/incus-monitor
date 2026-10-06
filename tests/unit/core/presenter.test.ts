@@ -351,6 +351,20 @@ describe('present: readout', () => {
         const row = onlyRow(instance(), { samples: sampler });
         expect(row.readout?.cpu).toBe('4%');
     });
+
+    it('shows a dash, not 0% or NaN, for an instance whose CPU usage is not available', () => {
+        const sampler = new Sampler();
+        const unavailable = { ...RUNNING_STATE, cpuUsageNs: -1 };
+        const at = (atMs: number): Snapshot => ({
+            kind: 'ready',
+            instances: [withState({ cpuUsageNs: unavailable.cpuUsageNs })],
+            atMs,
+        });
+        sampler.record(at(0));
+        sampler.record(at(1000));
+        const row = onlyRow(instance({ state: unavailable }), { samples: sampler });
+        expect(row.readout).toEqual({ cpu: '—', memory: nb('246 MB') });
+    });
 });
 
 describe('present: actions', () => {

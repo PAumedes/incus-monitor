@@ -150,6 +150,8 @@ for project \"default\""` (fixture `6.0/error-forbidden-project.json`). Always u
   `all-projects=true` for listing and an explicit `project=` for everything else.
   **Incus 7.0.1 differs:** the same request returns HTTP 200 with an empty list
   (`7.0/error-forbidden-project.json`), so an empty `default` project is not proof of an error.
+- `state.cpu.usage` is `-1` (not available) on a VM without a running incus-agent (seen on Incus
+  6.0.5). Decode it as valid and show no CPU percentage.
 - `state.disk` is `{}` on the `dir` storage driver. Treat disk usage as optional.
 - `memory.usage_peak` and `swap_usage_peak` are `0` on cgroup v2 hosts. Do not display them.
 - `started_at` is RFC 3339 with nanoseconds and a numeric offset. `Date.parse` truncates to
