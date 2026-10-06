@@ -1,0 +1,7 @@
+{
+    "uuid": "imon-shots@dev.local",
+    "name": "Incus Monitor screenshots",
+    "description": "Development tool: opens the Incus Monitor menu and writes screenshots.",
+    "shell-version": ["46", "47", "48", "49", "50"],
+    "version": 1
+}

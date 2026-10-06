@@ -100,6 +100,10 @@ demo-clean: ## Delete the imon-demo-* instances (nothing else)
 smoke: install ## Headless GNOME Shell: extension loads, no errors, survives disable/enable
 	scripts/smoke-shell.sh
 
+.PHONY: screenshots
+screenshots: zip ## Screenshots of the expanded menu row from a throwaway Shell (SCHEME=light|dark, VM=<name>)
+	scripts/ui-screenshots.sh --scheme $(or $(SCHEME),light) $(if $(VM),--vm $(VM))
+
 .PHONY: logs
 logs: ## Follow GNOME Shell logs
 	journalctl --follow --output=cat /usr/bin/gnome-shell
