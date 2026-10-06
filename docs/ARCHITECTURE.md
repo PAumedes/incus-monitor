@@ -70,6 +70,7 @@ src/
 │   │   ├── compat.ts       Required api_extensions and supported server versions.
 │   │   └── client.ts       IncusClient: server info, list instances, change state, wait for an operation.
 │   ├── launch.ts           Terminal candidates, detection and argv building for shell/console launches (pure).
+│   ├── terminal-command.ts Terminal setting <-> argv prefix: whitespace split and join (pure).
 │   ├── socket.ts           Socket candidate discovery (system socket, incus-user socket).
 │   ├── sampler.ts          Last two samples per instance; derives CPU % and network rates for the presenter.
 │   ├── metrics.ts          CPU %, memory, network rates from successive samples.
