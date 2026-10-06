@@ -84,6 +84,8 @@ Notes:
 - `make nested` and `make smoke` use their own settings databases with the extension already
   enabled. Your real session's settings are never touched. Logs appear in the terminal that
   started `make nested`.
+- `make demo` creates `imon-demo-*` instances (running, busy, stopped, frozen, a VM) so levels 4b and 5
+  show realistic data; `make demo-clean` deletes them and only them.
 - Until ROADMAP task T12, the extension shows only its panel icon (a box), with no menu.
 - Wayland cannot restart the shell in place. After `make install` in your real session, log out
   and back in.

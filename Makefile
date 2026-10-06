@@ -88,6 +88,14 @@ uninstall: ## Remove the user installation
 nested: ## Nested GNOME Shell with the extension enabled (GNOME 49+: mutter-dev-bin)
 	scripts/nested-shell.sh
 
+.PHONY: demo
+demo: ## Create the imon-demo-* instances (running, busy, stopped, frozen, VM) for realistic data
+	scripts/demo-instances.sh up
+
+.PHONY: demo-clean
+demo-clean: ## Delete the imon-demo-* instances (nothing else)
+	scripts/demo-instances.sh down
+
 .PHONY: smoke
 smoke: install ## Headless GNOME Shell: extension loads, no errors, survives disable/enable
 	scripts/smoke-shell.sh
