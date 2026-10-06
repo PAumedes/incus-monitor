@@ -121,25 +121,16 @@ function decodeStartedAt(parent: Fields, path: string): Decoded<number | null> {
     return ok(ms <= 0 ? null : ms);
 }
 
-interface Addresses {
-    readonly inet: string | null;
-    readonly inet6: string | null;
-}
-
-function firstGlobalAddresses(entries: unknown): Addresses {
-    let inet: string | null = null;
-    let inet6: string | null = null;
-    if (!isArray(entries)) return { inet, inet6 };
+/** The first global IPv4 address; IPv6 is never used, so the readout stays short and copyable. */
+function firstGlobalIPv4(entries: unknown): string | null {
+    if (!isArray(entries)) return null;
     for (const entry of entries) {
         if (!isRecord(entry)) continue;
-        const family = own(entry, 'family');
         const address = own(entry, 'address');
-        if (own(entry, 'scope') !== 'global' || typeof address !== 'string') continue;
-        if (!IP_ADDRESS.test(address)) continue;
-        if (family === 'inet') inet ??= address;
-        else if (family === 'inet6') inet6 ??= address;
+        if (own(entry, 'family') !== 'inet' || own(entry, 'scope') !== 'global') continue;
+        if (typeof address === 'string' && IP_ADDRESS.test(address)) return address;
     }
-    return { inet, inet6 };
+    return null;
 }
 
 interface Network {
@@ -153,7 +144,6 @@ function decodeNetwork(state: Fields, path: string): Decoded<Network> {
     if (!network.ok) return network;
     const networkPath = `${path}.network`;
     let inet: string | null = null;
-    let inet6: string | null = null;
     let rxBytes = 0;
     let txBytes = 0;
     for (const [name, nic] of Object.entries(network.value)) {
@@ -164,14 +154,12 @@ function decodeNetwork(state: Fields, path: string): Decoded<Network> {
         if (!counters.ok) return counters;
         rxBytes += counters.value[0];
         txBytes += counters.value[1];
-        const firsts = firstGlobalAddresses(own(nic, 'addresses'));
-        inet ??= firsts.inet;
-        inet6 ??= firsts.inet6;
+        inet ??= firstGlobalIPv4(own(nic, 'addresses'));
     }
     if (!Number.isFinite(rxBytes) || !Number.isFinite(txBytes)) {
         return fail(networkPath, 'summed counters overflow');
     }
-    return ok({ rxBytes, txBytes, address: inet ?? inet6 });
+    return ok({ rxBytes, txBytes, address: inet });
 }
 
 function decodeState(state: Fields, path: string): Decoded<InstanceState> {

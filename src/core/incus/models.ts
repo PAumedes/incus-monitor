@@ -12,6 +12,7 @@ export interface InstanceRef {
 /**
  * `cpuAllocatedNsPerSecond` and `memoryTotalBytes` are 0 when Incus does not report them;
  * `processes` and `cpuUsageNs` are -1 when not available (a VM without an agent).
+ * `primaryAddress` is the first global IPv4 address of a non-loopback interface, never IPv6.
  */
 export interface InstanceState {
     readonly cpuUsageNs: number;
