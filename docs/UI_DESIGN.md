@@ -41,12 +41,13 @@ Expanded row (`PopupSubMenuMenuItem`):
 │     Uptime     3 h 12 min                    │
 │     ──────────────────────────────────────── │
 │     Open Shell                               │
+│     ──────────────────────────────────────── │
 │     [■ Stop]   [↻ Restart]   [⏸ Freeze]       │
 ```
 
 - A `PopupSeparatorMenuItem` sets the actions (Open Shell and the buttons) apart from the
   details. It is shown only when the details and at least one action are, and is destroyed with
-  the row. The address has an 8 px right margin so the copy button does not touch it.
+  the row. A second one sets the buttons apart from Open Shell, shown only when both are. The address has an 8 px right margin so the copy button does not touch it.
 - **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). The
   project name is shown in dim text only when instances come from more than one project.
 - **Status dot**: an 8 px circle styled by CSS class (`running`, `frozen`, `stopped`, `error`). The
