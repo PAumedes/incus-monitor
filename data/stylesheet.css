@@ -1,2 +1,76 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 /* Keep this file small: inherit Shell theme metrics and colours wherever possible. */
+
+/* An 8 px dot: 6 px plus the 1 px ring, which keeps it visible in light, dark and high contrast. */
+.incus-monitor-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 4px;
+    border: 1px solid #77767b;
+    margin-right: 8px;
+}
+
+.incus-monitor-dot-running {
+    background-color: #2ec27e;
+    border-color: #26a269;
+}
+
+.incus-monitor-dot-frozen {
+    background-color: #e5a50a;
+    border-color: #c64600;
+}
+
+.incus-monitor-dot-error {
+    background-color: #e01b24;
+    border-color: #a51d2d;
+}
+
+.incus-monitor-dot-stopped {
+    background-color: transparent;
+}
+
+.incus-monitor-tabular {
+    font-feature-settings: 'tnum';
+}
+
+/* Dimming is set as opacity in code, so it follows the theme's text colour. */
+.incus-monitor-dim {
+    margin-right: 8px;
+}
+
+.incus-monitor-heading {
+    min-width: 6em;
+}
+
+.incus-monitor-rate {
+    margin-right: 12px;
+}
+
+.incus-monitor-name {
+    max-width: 16em;
+}
+
+.incus-monitor-notice {
+    max-width: 24em;
+}
+
+.incus-monitor-actions {
+    spacing: 6px;
+}
+
+.incus-monitor-action {
+    spacing: 4px;
+}
+
+.incus-monitor-footer {
+    spacing: 6px;
+}
+
+/* The only fixed widths, in em: values crossing 10, 100 or 1000 do not shift the columns. */
+.incus-monitor-cpu {
+    min-width: 4em;
+}
+
+.incus-monitor-memory {
+    min-width: 6em;
+}
