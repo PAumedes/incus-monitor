@@ -58,11 +58,15 @@ Expanded row (`PopupSubMenuMenuItem`):
   `incus-monitor-terminal` insets that highlight 6 px with a rounded corner, and the padding keeps
   the text where it was. Stock items take key focus on hover and keep it when the pointer leaves,
   which left Open Shell (or the header) highlighted over an inert detail row, so on pointer exit
-  the item hands key focus to its submenu actor; a keyboard-focused item the pointer never entered
-  is untouched. While a row is pending its buttons stop taking focus, and a focused button would
+  the item hands key focus to the top-level menu actor; a keyboard-focused item the pointer never
+  entered is untouched. It must not be the submenu's own actor: GNOME 46's menu hands key focus to
+  an item that turns sensitive again while its menu actor holds it, so Open Shell was highlighted
+  as soon as an action settled under a resting pointer. While a row is pending its buttons stop taking focus, and a focused button would
   lose key focus to whichever neighbour the Shell version picks (Open Shell on GNOME 46), so the row
   moves it to its header first and returns it to the same action once the row settles, unless the
-  user moved it meanwhile. Expansion never moves key focus; Tab reaches the copy button, Open Shell
+  user moved it meanwhile. The copy button keeps its space (transparent and inert) when there is no address, so the details
+  block has the same height in every state and nothing moves under a resting pointer. Expansion
+  never moves key focus; Tab reaches the copy button, Open Shell
   and the action buttons in turn. The header's grey while expanded is the theme's `:checked` state
   and stays.
 - **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). While the

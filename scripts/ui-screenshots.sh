@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Screenshots of the open menu with a row expanded, from a throwaway headless GNOME Shell.
 #
-# usage: scripts/ui-screenshots.sh [--scheme light|dark] [--out DIR] [--rows name1,name2] [--vm NAME] [--restart]
+# usage: scripts/ui-screenshots.sh [--scheme light|dark] [--out DIR] [--rows name1,name2] [--vm NAME] [--restart] [--pointer]
 #   --scheme  colour scheme of the throwaway session (default light)
 #   --out     where the PNGs and diagnostics.txt go (default build/screenshots)
 #   --rows    instance names to expand (default: the first row)
 #   --vm      run inside this Incus desktop VM as its "ubuntu" user, with the zip pushed in
 #   --restart also restart each --rows instance from the keyboard and log key focus (use throwaway rows)
+#   --pointer park the pointer on Restart of each --rows instance, press it through its click handler
+#             and log what is under the pointer, key focus and geometry every 0.5 s (use throwaway rows)
 #   --zip     extension zip to use (default: the one `make zip` builds; set by --vm inside the VM)
 #
 # Per row it writes <scheme>-<row>-rest.png (expanded), -hover.png (pointer over the first action)
@@ -15,8 +17,7 @@
 # highlight) and -tab.png (reached with the keyboard, then Tab), plus <scheme>-diagnostics.txt with the focus
 # and geometry of the row's items.
 #
-# Known limitation: synthetic clicks were not delivered on GNOME 46 (the 24.04 VM) in earlier
-# trials, so there is no click scenario. Hover and keyboard focus did work there, but confirm it in
+# Confirm hover, press and keyboard results in the "key focus" lines of
 # <scheme>-diagnostics.txt (the "key focus" line) rather than trusting the picture alone.
 #
 # Nothing of the real session is touched: the extensions live in a private XDG_DATA_HOME, the
@@ -24,7 +25,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-scheme=light out=build/screenshots rows= vm= zip= restart=
+scheme=light out=build/screenshots rows= vm= zip= restart= pointer=
 while (($#)); do
     case $1 in
         --scheme) scheme=${2:?--scheme needs light or dark}; shift 2 ;;
@@ -32,6 +33,7 @@ while (($#)); do
         --rows) rows=${2:?--rows needs a comma-separated list}; shift 2 ;;
         --vm) vm=${2:?--vm needs an instance name}; shift 2 ;;
         --restart) restart=1; shift ;;
+        --pointer) pointer=1; shift ;;
         --zip) zip=${2:?--zip needs a file}; shift 2 ;;
         *) echo "unknown option: $1 (see the header of $0)" >&2; exit 2 ;;
     esac
@@ -50,7 +52,7 @@ if [[ -n $vm ]]; then
     incus file push -r scripts/ui-screenshots scripts/ui-screenshots.sh "$vm$work/scripts/" >/dev/null
     incus exec "$vm" -- chown -R ubuntu:ubuntu "$work"
     incus exec "$vm" -- runuser -u ubuntu -- env HOME=/home/ubuntu XDG_RUNTIME_DIR=/run/user/1000 \
-        "$work/scripts/ui-screenshots.sh" --scheme "$scheme" ${rows:+--rows "$rows"} ${restart:+--restart} \
+        "$work/scripts/ui-screenshots.sh" --scheme "$scheme" ${rows:+--rows "$rows"} ${restart:+--restart} ${pointer:+--pointer} \
         --zip "$work/extension.zip" --out "$work/out" </dev/null
     mkdir -p "$out"
     pull=$(mktemp -d)
@@ -98,7 +100,7 @@ fi
 
 export XDG_DATA_HOME=$root/data XDG_CONFIG_HOME=$root/config DCONF_PROFILE=$profile
 export SESSION_MODE=$session_mode GTK_THEME_NAME=$gtk_theme SCHEME=$scheme UUID=$uuid HELPER=$helper
-export LOG=$log SHOT_DIR=$out SHOT_PREFIX="$scheme-" SHOT_ROWS=$rows SHOT_RESTART=$restart
+export LOG=$log SHOT_DIR=$out SHOT_PREFIX="$scheme-" SHOT_ROWS=$rows SHOT_RESTART=$restart SHOT_POINTER=$pointer
 
 dbus-run-session -- bash -c '
     set -euo pipefail

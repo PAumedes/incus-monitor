@@ -85,16 +85,19 @@ Notes:
 - `make nested` and `make smoke` use their own settings databases with the extension already
   enabled. Your real session's settings are never touched. Logs appear in the terminal that
   started `make nested`.
-- `make screenshots` (`scripts/ui-screenshots.sh`, see its header for `--rows` and `--out`) uses a
+- `make screenshots` (`scripts/ui-screenshots.sh`, see its header for `--rows`, `--pointer` and `--out`) uses a
   private data directory, dconf profile and config directory, all deleted on exit. A helper
   extension under `scripts/ui-screenshots/` drives the menu and is never packaged. With `VM=<name>`
-  it runs inside that Incus desktop VM as `ubuntu` and pulls the PNGs back. Synthetic clicks were
-  not delivered on GNOME 46, so there is no click scenario; check the `key focus` line of
+  it runs inside that Incus desktop VM as `ubuntu` and pulls the PNGs back. Check the `key focus` line of
   `<scheme>-diagnostics.txt` for hover, leave and keyboard shots (after `leave`, no item may be
   `[focus]`).
   `--restart` (throwaway rows only, it really restarts them) adds a keyboard scenario: Tab to
   Restart, Return, then `key focus` right after, while pending and once settled (header while
   pending, Restart again afterwards).
+  `--pointer` (throwaway rows only) is the mouse scenario: the pointer travels from the header over
+  Open Shell to Restart in steps, a virtual button press clicks it, and the pointer then rests for
+  30 s. Each change of the actor under the pointer, key focus, and the geometry of the row's items
+  is logged: Open Shell must never be `selected` or `[focus]` and no item may move.
 - `make demo` creates `imon-demo-*` instances (running, busy, stopped, frozen, a VM) so levels 4b and 5
   show realistic data; `make demo-clean` deletes them and only them.
 - Until ROADMAP task T12, the extension shows only its panel icon (a box), with no menu.
