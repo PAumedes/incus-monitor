@@ -117,6 +117,12 @@ runs that check on Ubuntu 24.04 and 26.04 images.
 
 - Inherit the Shell theme. `stylesheet.css` holds only the status dot, tabular numerals and dim
   text, all with the `incus-monitor-` prefix.
+- **Contrast**: every text in the menu, including detail headings and values, needs at least 4.5:1
+  against the menu background in light and dark styles. Detail rows are `PopupBaseMenuItem`s built
+  with `{ activate: false, hover: false, can_focus: false }`: reactive, so the theme does not draw
+  them insensitive (about 2:1 on light), but inert (no activation, hover highlight or focus stop).
+  Never use `reactive: false` for rows that show text. Headings add an opacity of 200/255 on the
+  normal text colour, which measured at least 5.5:1 (GNOME 46 Yaru light is the lowest).
 - Status colours are the GNOME palette's semantic greens and yellows, and they must stay legible
   in light and dark styles and in high contrast.
 - No custom fonts, no hard-coded font sizes, no fixed widths except the readout column (in `em`).

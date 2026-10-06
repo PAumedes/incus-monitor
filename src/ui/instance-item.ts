@@ -32,11 +32,18 @@ function label(styleClass?: string): St.Label {
     });
 }
 
-// Opacity follows the theme's own text colour in light and dark styles, unlike a fixed colour.
+// Opacity is applied to the theme's own text colour, so it follows light and dark styles. It must
+// not be stacked on an insensitive label: the theme's grey times the opacity falls under 4.5:1.
 function dimLabel(styleClass: string): St.Label {
     const dimmed = label(styleClass);
     dimmed.opacity = DIM_TEXT_OPACITY;
     return dimmed;
+}
+
+// `reactive: false` would make the theme draw the row insensitive (about 2:1 on light). The row
+// stays reactive but inert: it neither activates, highlights on hover nor takes focus.
+function inertItem(): PopupMenu.PopupBaseMenuItem {
+    return new PopupMenu.PopupBaseMenuItem({ activate: false, hover: false, can_focus: false });
 }
 
 /** A fixed-width cell with its text on the right, so values do not shift the columns. */
@@ -72,7 +79,7 @@ export class InstanceItem {
     readonly #copy: St.Button;
     readonly #uptime = label('incus-monitor-tabular');
     readonly #terminal: PopupMenu.PopupMenuItem;
-    readonly #actionsItem = new PopupMenu.PopupBaseMenuItem({ reactive: false, can_focus: false });
+    readonly #actionsItem = inertItem();
     readonly #actionsBox = new St.BoxLayout({
         x_expand: true,
         style_class: 'incus-monitor-actions',
@@ -146,7 +153,7 @@ export class InstanceItem {
     }
 
     #detailRow(heading: string, ...values: St.Widget[]): void {
-        const row = new PopupMenu.PopupBaseMenuItem({ reactive: false, can_focus: false });
+        const row = inertItem();
         const headingLabel = dimLabel('incus-monitor-heading');
         headingLabel.text = heading;
         row.add_child(headingLabel);

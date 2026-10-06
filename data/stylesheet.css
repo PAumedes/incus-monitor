@@ -33,7 +33,7 @@
     font-feature-settings: 'tnum';
 }
 
-/* Dimming is set as opacity in code, so it follows the theme's text colour. */
+/* Dimming is an opacity set in code on the theme's normal text colour; see UI_DESIGN.md#contrast. */
 .incus-monitor-dim {
     margin-right: 8px;
 }
