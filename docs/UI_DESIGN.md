@@ -128,4 +128,4 @@ One `Adw.PreferencesPage` with one group:
 - Refresh interval (spin row, 2–60 s)
 - Show running count (switch row)
 - Show stopped instances (switch row)
-- Terminal (entry row, placeholder "Automatic")
+- Terminal (entry row, empty field, explained by the group description)
