@@ -75,9 +75,10 @@ export class InstanceItem {
     readonly #memory = label('incus-monitor-tabular');
     readonly #down = label('incus-monitor-tabular incus-monitor-rate');
     readonly #up = label('incus-monitor-tabular');
-    readonly #address = label('incus-monitor-tabular');
+    readonly #address = label('incus-monitor-tabular incus-monitor-address');
     readonly #copy: St.Button;
     readonly #uptime = label('incus-monitor-tabular');
+    readonly #separator = new PopupMenu.PopupSeparatorMenuItem();
     readonly #terminal: PopupMenu.PopupMenuItem;
     readonly #actionsItem = inertItem();
     readonly #actionsBox = new St.BoxLayout({
@@ -121,6 +122,8 @@ export class InstanceItem {
         if (previous === undefined || !structurallyEqual(previous.actions, row.actions)) {
             this.#updateActions(row);
         }
+        // Set apart the actions from the details, and never leave a rule with nothing under it.
+        this.#separator.visible = row.details !== null && row.actions.length > 0;
         for (const button of this.#actionButtons) {
             button.reactive = !inert;
             // A non-reactive button can still be activated from the keyboard while focused.
@@ -181,6 +184,7 @@ export class InstanceItem {
     }
 
     #buildActions(): void {
+        this.item.menu.addMenuItem(this.#separator);
         this.#terminal.connect('activate', () => {
             const row = this.#row;
             if (this.#terminalTarget !== null && row !== undefined) {

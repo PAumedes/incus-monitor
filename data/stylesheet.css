@@ -42,6 +42,10 @@
     min-width: 6em;
 }
 
+.incus-monitor-address {
+    margin-right: 8px;
+}
+
 .incus-monitor-rate {
     margin-right: 12px;
 }
