@@ -69,21 +69,28 @@ make test-gjs
 
 From fastest to most realistic:
 
-| Level                         | Command                                                                                 | What you get                                                                                                       | Needs                                                |
-| ----------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| 1. Unit (TDD loop)            | `npm run test:watch`                                                                    | Core logic, in milliseconds                                                                                        | Node 22 (`.nvmrc`)                                   |
-| 2. Local gate                 | `make check test-gjs`                                                                   | Everything except packaging                                                                                        | gjs                                                  |
-| 3. Clean CI run               | `make incus-ci RELEASE=24.04` (or `incus-ci-all`)                                       | The exact CI pipeline in a disposable container; artifacts in `build/incus-<release>/`                             | Incus (you have it)                                  |
-| 4a. Headless smoke, 46 and 50 | `make smoke`                                                                            | Boots a throwaway headless Shell, checks the extension is ACTIVE with no errors and survives disable/enable cycles | —                                                    |
-| 4b. Nested shell, GNOME 50    | `make install && make nested`                                                           | The extension in a GNOME window on your desktop, no logout                                                         | `sudo apt install mutter-dev-bin` (GNOME 49+ devkit) |
-| 5. Your real session          | `make install`, log out and in, `gnome-extensions enable incus-monitor@patricioaumedes` | Daily-driver test against your real Incus                                                                          | —                                                    |
-| 6. Desktop VM, GNOME 46 or 50 | `make incus-package RELEASE=24.04 && make vm RELEASE=24.04`                             | A full Ubuntu desktop VM with Incus, a demo container and the `.deb` installed                                     | `sudo apt install virt-viewer`                       |
+| Level                         | Command                                                                                 | What you get                                                                                                            | Needs                                                |
+| ----------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1. Unit (TDD loop)            | `npm run test:watch`                                                                    | Core logic, in milliseconds                                                                                             | Node 22 (`.nvmrc`)                                   |
+| 2. Local gate                 | `make check test-gjs`                                                                   | Everything except packaging                                                                                             | gjs                                                  |
+| 3. Clean CI run               | `make incus-ci RELEASE=24.04` (or `incus-ci-all`)                                       | The exact CI pipeline in a disposable container; artifacts in `build/incus-<release>/`                                  | Incus (you have it)                                  |
+| 4a. Headless smoke, 46 and 50 | `make smoke`                                                                            | Boots a throwaway headless Shell, checks the extension is ACTIVE with no errors and survives disable/enable cycles      | —                                                    |
+| 4b. Nested shell, GNOME 50    | `make install && make nested`                                                           | The extension in a GNOME window on your desktop, no logout                                                              | `sudo apt install mutter-dev-bin` (GNOME 49+ devkit) |
+| 4c. Screenshots               | `make screenshots` (`SCHEME=dark`, `VM=imon-desktop-2404`)                              | PNGs of an expanded row at rest, hovered and keyboard-focused, from a throwaway headless Shell, in `build/screenshots/` | `make demo` for data                                 |
+| 5. Your real session          | `make install`, log out and in, `gnome-extensions enable incus-monitor@patricioaumedes` | Daily-driver test against your real Incus                                                                               | —                                                    |
+| 6. Desktop VM, GNOME 46 or 50 | `make incus-package RELEASE=24.04 && make vm RELEASE=24.04`                             | A full Ubuntu desktop VM with Incus, a demo container and the `.deb` installed                                          | `sudo apt install virt-viewer`                       |
 
 Notes:
 
 - `make nested` and `make smoke` use their own settings databases with the extension already
   enabled. Your real session's settings are never touched. Logs appear in the terminal that
   started `make nested`.
+- `make screenshots` (`scripts/ui-screenshots.sh`, see its header for `--rows` and `--out`) uses a
+  private data directory, dconf profile and config directory, all deleted on exit. A helper
+  extension under `scripts/ui-screenshots/` drives the menu and is never packaged. With `VM=<name>`
+  it runs inside that Incus desktop VM as `ubuntu` and pulls the PNGs back. Synthetic clicks were
+  not delivered on GNOME 46, so there is no click scenario; check the `key focus` line of
+  `<scheme>-diagnostics.txt` for hover and keyboard shots.
 - `make demo` creates `imon-demo-*` instances (running, busy, stopped, frozen, a VM) so levels 4b and 5
   show realistic data; `make demo-clean` deletes them and only them.
 - Until ROADMAP task T12, the extension shows only its panel icon (a box), with no menu.
