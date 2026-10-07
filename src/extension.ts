@@ -190,7 +190,11 @@ export default class IncusMonitorExtension extends Extension {
         if (session?.monitor === undefined || instance === undefined) return;
         const result = await session.monitor.perform(action, instance);
         // A disable and re-enable during the wait leaves a different session: say nothing then.
-        if (this.#session !== session || result.ok) return;
+        if (this.#session !== session) return;
+        if (result.ok) {
+            session.notice.clear(key);
+            return;
+        }
         const notice = failureNotice(action, instance.name, result.error, _);
         if (notice === null) return;
         const logAction = notice.offersLog
@@ -201,7 +205,7 @@ export default class IncusMonitorExtension extends Extension {
                   },
               }
             : undefined;
-        session.notice.show(notice.title, notice.message, logAction);
+        session.notice.show(key, notice.title, notice.message, logAction);
     }
 
     #openTerminal(target: TerminalTarget, key: string): void {

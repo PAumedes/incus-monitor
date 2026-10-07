@@ -30,6 +30,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T19 | Move CI to the self-hosted GitLab runner (`.gitlab-ci.yml` is ready; set runner tags)                        | T00        | todo   |
 | T20 | B1: "Show log" action on the failure notification                                                            | T17        | review |
 | T21 | B2: Disk usage row in the expanded instance                                                                  | T20        | review |
+| T22 | B9–B11: stale failure notice, pager robustness, terminal prefix rules                                        | T21        | review |
 
 ## Acceptance criteria
 
@@ -261,6 +262,20 @@ Status: `todo` · `in-progress` · `review` · `done`
 - [INCUS_API.md](INCUS_API.md) lists the field and the `dir` quirk it already records.
 - Manual: a Btrfs-backed instance in the VM on GNOME 46 and a `dir` instance on 50 (no row).
 
+### T22: Failure notice and log view polish (B9, B10, B11)
+
+- B9: a successful action on an instance destroys the pending failure notification for that
+  instance (and only that one: a failure for another instance stays). Decision logic in core
+  with unit tests; the notification object stays in `ui/failure-notice.ts`.
+- B10: the `log` target script neutralises the user's `LESS` for the call (a short log must keep
+  the terminal open even when `LESS` has `-F`), and uses `less` when no `PAGER` is set; names stay
+  positional and absent from the script text. If no pager can run, the terminal still shows the
+  log and waits (no flash-and-close). Argv tests pin all of this.
+- B11: documented, not guessed. The Terminal setting's command is appended as separate arguments;
+  `docs/UI_DESIGN.md` and the preference text say so, with working examples, and name the
+  terminals that take one command string (`xfce4-terminal -e`, `mate-terminal -e`) as unsupported.
+  No join rule exists in `core/terminal-command.ts`.
+
 ## After 1.0: backlog
 
 Ideas the maintainer wants kept, in rough priority order. None is scheduled. Before starting one,
@@ -291,13 +306,3 @@ icons only, a fixture recorded from a real Incus for every new field.
 - **B7: Stopped-unexpectedly notification.** Notify when a running instance leaves `running`
   without an action started from the menu.
 - **B8: Pinned favourites and a filter** for long lists.
-- **B9: Clear a stale failure notification.** When a later action on the same instance succeeds,
-  destroy the pending failure notification (one call to the notice's existing clear), so a
-  "Show log" button for an old failure does not linger in the tray.
-- **B10: Make the log view robust to the user's pager settings.** The log script runs `less`,
-  which honours `LESS` (`-F` closes the terminal on a short log) and fails if `less` is absent.
-  Neutralise `LESS` for the call and fall back to `${PAGER:-less}`; keep names positional.
-- **B11: Terminals that take one command string.** Targets spawn `prefix + argv`, which breaks
-  terminals configured with a single-string `-e` (such as `xfce4-terminal -e`). Either document
-  the supported settings in the Terminal preference or add a per-terminal join rule in
-  `core/terminal-command.ts`.

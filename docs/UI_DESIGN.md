@@ -110,7 +110,7 @@ Expanded row (`PopupSubMenuMenuItem`):
 - **Accessibility text**: a missing detail value ("—") is announced as a translated "Not
   available", and spoken download and upload text comes from a translated template. The
   instance type is shown by its icon only; the row's accessible name leaves it out.
-- **Failures** raise a single notification with the Incus message. Nothing modal. When the daemon answered with an error or timed out, it carries one "Show log" button that opens the instance's log in the terminal, and it stays in the message tray while it has the button.
+- **Failures** raise a single notification with the Incus message. Nothing modal. When the daemon answered with an error or timed out, it carries one "Show log" button that opens the instance's log in the terminal, and it stays in the message tray while it has the button. It is cleared when the next action on the same instance succeeds.
 - **No destructive actions** (delete, rebuild, snapshot restore) in the menu. Ever.
 
 ## Empty and error states
@@ -172,4 +172,4 @@ One `Adw.PreferencesPage` with one group:
 - Refresh interval (spin row, 2–60 s)
 - Show running count (switch row)
 - Show stopped instances (switch row)
-- Terminal (entry row, empty field, explained by the group description)
+- Terminal (entry row, empty field, explained by the group description). Documented, not guessed: the command is appended as separate arguments, so the program must accept it that way (`alacritty -e`, `xterm -e`, `konsole -e`, `gnome-terminal --`, `xfce4-terminal -x`). Terminals that take one command string (`xfce4-terminal -e`, `mate-terminal -e`) are not supported.
