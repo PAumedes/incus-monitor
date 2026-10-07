@@ -9,34 +9,34 @@ Status: `todo` · `in-progress` · `review` · `done`
 | ID  | Task                                                                                                         | Depends on | Status |
 | --- | ------------------------------------------------------------------------------------------------------------ | ---------- | ------ |
 | T00 | Repository bootstrap: `git init`, first commit, `make hooks`, GitHub repository, first green Actions run     | —          | done   |
-| T01 | `core/result.ts`, `core/errors.ts`: Result type and the `IncusError` union                                   | —          | review |
-| T02 | `core/http/request.ts`, `core/http/response.ts`: HTTP/1.1 codec                                              | T01        | review |
-| T03 | `core/incus/envelope.ts`: sync / async / error envelopes                                                     | T01        | review |
-| T04 | `core/incus/decode.ts`, `models.ts`: Server, Instance, InstanceState decoders against fixtures               | T03        | review |
-| T05 | `core/incus/compat.ts`: server version and api_extensions gate                                               | T04        | review |
-| T06 | `core/ports.ts`, `core/incus/client.ts`: IncusClient over a Transport port                                   | T02, T04   | review |
-| T07 | `core/socket.ts`, `core/cancel.ts`: socket discovery over a SocketProbe port, cancellation                   | T01        | review |
-| T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | review |
-| T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | review |
-| T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | review |
-| T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, socket probe, launcher                    | T06, T07   | review |
-| T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | review |
-| T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | review |
-| T14 | Record Incus 7.0 LTS fixtures; contract tests for 6.0 and 7.0                                                | T04        | review |
-| T15 | i18n: generate `po/` template with `scripts/update-po.sh`, add Spanish translation, check `pack` compiles it | T12, T13   | review |
-| T16 | Manual matrix on GNOME 46 and 50, screenshots, README polish                                                 | T12–T15    | review |
+| T01 | `core/result.ts`, `core/errors.ts`: Result type and the `IncusError` union                                   | —          | done   |
+| T02 | `core/http/request.ts`, `core/http/response.ts`: HTTP/1.1 codec                                              | T01        | done   |
+| T03 | `core/incus/envelope.ts`: sync / async / error envelopes                                                     | T01        | done   |
+| T04 | `core/incus/decode.ts`, `models.ts`: Server, Instance, InstanceState decoders against fixtures               | T03        | done   |
+| T05 | `core/incus/compat.ts`: server version and api_extensions gate                                               | T04        | done   |
+| T06 | `core/ports.ts`, `core/incus/client.ts`: IncusClient over a Transport port                                   | T02, T04   | done   |
+| T07 | `core/socket.ts`, `core/cancel.ts`: socket discovery over a SocketProbe port, cancellation                   | T01        | done   |
+| T08 | `core/metrics.ts`, `core/format.ts`: rates, percentages and human formatting                                 | T04        | done   |
+| T09 | `core/monitor.ts`: polling state machine with Clock port, cadence, back-off, actions                         | T05–T08    | done   |
+| T10 | `core/presenter.ts`: Snapshot → ViewModel                                                                    | T08, T09   | done   |
+| T11 | `adapters/*`: Gio transport (+ fake server), GLib clock, settings, socket probe, launcher                    | T06, T07   | done   |
+| T12 | `ui/*` + `extension.ts` composition root, stylesheet, gettext                                                | T10, T11   | done   |
+| T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | done   |
+| T14 | Record Incus 7.0 LTS fixtures; contract tests for 6.0 and 7.0                                                | T04        | done   |
+| T15 | i18n: generate `po/` template with `scripts/update-po.sh`, add Spanish translation, check `pack` compiles it | T12, T13   | done   |
+| T16 | Manual matrix on GNOME 46 and 50, screenshots, README polish                                                 | T12–T15    | done   |
 | T17 | Release 1.0.0 ([RELEASING.md](RELEASING.md))                                                                 | T16        | todo   |
 | T18 | Private Launchpad PPA: GPG key, `dput` config, first `make ppa-source` uploads for noble and resolute        | T17        | todo   |
 | T19 | Move CI to the self-hosted GitLab runner (`.gitlab-ci.yml` is ready; set runner tags)                        | T00        | todo   |
-| T20 | B1: "Show log" action on the failure notification                                                            | T17        | review |
-| T21 | B2: Disk usage row in the expanded instance                                                                  | T20        | review |
-| T22 | B9–B11: stale failure notice, pager robustness, terminal prefix rules                                        | T21        | review |
-| T23 | B5: "5 of 7 running" summary line at the top of the menu                                                     | T22        | review |
-| T24 | B6: port forwards (proxy devices) in the expanded row                                                        | T23        | review |
-| T25 | Developer tooling: suites, readable output, `make doctor`, command-map docs, Makefile tests                  | T24        | review |
-| T26 | B7: notification when a running instance stops without a menu action                                         | T25        | review |
-| T27 | Notifications under the extension's own name and icon instead of "System"                                    | T26        | review |
-| T28 | Copy and accessibility polish from the whole-UI audit                                                        | T27        | review |
+| T20 | B1: "Show log" action on the failure notification                                                            | T17        | done   |
+| T21 | B2: Disk usage row in the expanded instance                                                                  | T20        | done   |
+| T22 | B9–B11: stale failure notice, pager robustness, terminal prefix rules                                        | T21        | done   |
+| T23 | B5: "5 of 7 running" summary line at the top of the menu                                                     | T22        | done   |
+| T24 | B6: port forwards (proxy devices) in the expanded row                                                        | T23        | done   |
+| T25 | Developer tooling: suites, readable output, `make doctor`, command-map docs, Makefile tests                  | T24        | done   |
+| T26 | B7: notification when a running instance stops without a menu action                                         | T25        | done   |
+| T27 | Notifications under the extension's own name and icon instead of "System"                                    | T26        | done   |
+| T28 | Copy and accessibility polish from the whole-UI audit                                                        | T27        | done   |
 
 ## Acceptance criteria
 
