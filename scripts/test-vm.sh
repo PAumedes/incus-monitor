@@ -60,6 +60,8 @@ elif [[ $(incus list "$vm" --format csv --columns s </dev/null) == STOPPED ]]; t
     wait_for_agent
 fi
 
+# The previous push left a file owned by another uid; fs.protected_regular denies overwriting it in sticky /tmp.
+incus exec "$vm" -- rm -f /tmp/extension.deb </dev/null
 incus file push "$deb" "$vm/tmp/extension.deb"
 # A per-user copy shadows /usr/share, so an old one would keep showing stale files.
 incus exec "$vm" -- bash -euo pipefail -c "
