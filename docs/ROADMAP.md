@@ -24,7 +24,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T13 | `prefs.ts`: Adw preferences                                                                                  | T11        | review |
 | T14 | Record Incus 7.0 LTS fixtures; contract tests for 6.0 and 7.0                                                | T04        | review |
 | T15 | i18n: generate `po/` template with `scripts/update-po.sh`, add Spanish translation, check `pack` compiles it | T12, T13   | review |
-| T16 | Manual matrix on GNOME 46 and 50, screenshots, README polish                                                 | T12–T15    | todo   |
+| T16 | Manual matrix on GNOME 46 and 50, screenshots, README polish                                                 | T12–T15    | review |
 | T17 | Release 1.0.0 ([RELEASING.md](RELEASING.md))                                                                 | T16        | todo   |
 | T18 | Private Launchpad PPA: GPG key, `dput` config, first `make ppa-source` uploads for noble and resolute        | T17        | todo   |
 | T19 | Move CI to the self-hosted GitLab runner (`.gitlab-ci.yml` is ready; set runner tags)                        | T00        | todo   |
