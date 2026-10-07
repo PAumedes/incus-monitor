@@ -359,7 +359,7 @@ function explain(error: IncusError, _: Translate): Explanation {
             return { text: _('Incus is not installed'), retry: false };
         case 'permission-denied':
             return {
-                text: _('Add your user to the "incus" group, then log in again'),
+                text: _('Add your user to the “incus” group, then log in again'),
                 retry: false,
             };
         case 'unsupported':
@@ -377,15 +377,12 @@ function explain(error: IncusError, _: Translate): Explanation {
 function failureView(error: IncusError, ctx: PresentContext): ViewModel {
     if (error.kind === 'cancelled') return loading(ctx);
     const { text, retry } = explain(error, ctx.translate);
-    const _ = ctx.translate;
-    // Translators: {problem} is why Incus cannot be used, such as "Incus is not installed".
-    const template = _('Incus, {problem}');
     return {
         kind: 'notice',
         text,
         action: retry ? 'retry' : null,
         panelIcon: WARNING_ICON,
-        panelAccessibleName: fill(template, { problem: text }),
+        panelAccessibleName: text,
     };
 }
 
@@ -542,6 +539,7 @@ export function stoppedNotice(
     instances: readonly Instance[],
     _: Translate,
     ngettext: PresentContext['ngettext'],
+    locale: string,
 ): { readonly title: string; readonly message: string } {
     const [only] = instances;
     if (instances.length === 1 && only !== undefined) {
@@ -552,7 +550,7 @@ export function stoppedNotice(
                 : // Translators: {name} is the name of an instance.
                   _('{name} is no longer running.');
         return {
-            title: _('Instance stopped'),
+            title: _('Instance not running'),
             message: fill(template, { name: only.name }),
         };
     }
@@ -562,15 +560,20 @@ export function stoppedNotice(
         // Translators: {count} is how many more stopped instances exist than are named. Both forms
         // are identical on purpose: the count is a placeholder.
         names.push(
-            fill(ngettext('+{count} more', '+{count} more', hidden), { count: String(hidden) }),
+            fill(ngettext('+{count} more', '+{count} more', hidden), {
+                count: formatCount(hidden, locale),
+            }),
         );
     }
-    // Translators: {count} is how many instances stopped. Both forms are identical on purpose:
-    // the count is a placeholder.
     const title = ngettext(
-        '{count} instances stopped',
-        '{count} instances stopped',
+        // Translators: {count} is how many instances are not running. Both forms are identical on
+        // purpose: the count is a placeholder.
+        '{count} instances not running',
+        '{count} instances not running',
         instances.length,
     );
-    return { title: fill(title, { count: String(instances.length) }), message: names.join(', ') };
+    return {
+        title: fill(title, { count: formatCount(instances.length, locale) }),
+        message: names.join(', '),
+    };
 }

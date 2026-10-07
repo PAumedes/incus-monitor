@@ -85,7 +85,7 @@ export function launchFailure(
             // The detail is a diagnostic for logs, not UI text.
             return { title, message: _('The terminal could not be started.') };
         case 'invalid-name':
-            return { title, message: _('This instance name cannot be used to open a terminal') };
+            return { title, message: _('This instance name cannot be used to open a terminal.') };
     }
 }
 

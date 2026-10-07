@@ -72,13 +72,17 @@ export default class IncusMonitorPreferences extends ExtensionPreferences {
             return false;
         });
 
-        const group = new Adw.PreferencesGroup({
-            // Translators: explains the Terminal field; leave it empty to detect a terminal.
-            description: _('Command is added as separate arguments: xterm -e. Empty detects one.'),
+        const settingsGroup = new Adw.PreferencesGroup();
+        for (const row of [refresh, runningCount, stoppedInstances]) settingsGroup.add(row);
+        // Its own group keeps the help directly above the Terminal field.
+        const terminalGroup = new Adw.PreferencesGroup({
+            // Translators: explains the Terminal field above it; "one" is a terminal.
+            description: _('Leave empty to detect one. Example: “xterm -e”.'),
         });
-        for (const row of [refresh, runningCount, stoppedInstances, terminal]) group.add(row);
+        terminalGroup.add(terminal);
         const page = new Adw.PreferencesPage();
-        page.add(group);
+        page.add(settingsGroup);
+        page.add(terminalGroup);
         // eslint-disable-next-line @typescript-eslint/no-deprecated
         window.add(page);
         return Promise.resolve();

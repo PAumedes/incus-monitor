@@ -659,7 +659,7 @@ describe('present: notices and neutral states', () => {
         [
             'permission denied',
             { kind: 'permission-denied' },
-            'Add your user to the "incus" group, then log in again',
+            'Add your user to the “incus” group, then log in again',
             null,
         ],
         ['unreachable', { kind: 'unreachable' }, 'Incus is not responding', 'retry'],
@@ -679,16 +679,29 @@ describe('present: notices and neutral states', () => {
             text: `[${text}]`,
             action: retry,
             panelIcon: WARNING,
-            panelAccessibleName: `[Incus, {problem}]`.replace('{problem}', `[${text}]`),
+            panelAccessibleName: `[${text}]`,
         });
     });
 
-    it('names the panel button for an error from a translated template filled with the notice text', () => {
-        const vm = present(failed({ kind: 'not-installed' }), {
-            ...context(),
-            translate: msgid => (msgid === 'Incus, {problem}' ? '{problem} (Incus)' : msgid),
-        });
-        expect(vm.panelAccessibleName).toBe('Incus is not installed (Incus)');
+    it.each<[string, IncusError]>([
+        ['not installed', { kind: 'not-installed' }],
+        ['permission denied', { kind: 'permission-denied' }],
+        ['unsupported', { kind: 'unsupported', reason: 'server 5.0' }],
+        ['unreachable', { kind: 'unreachable' }],
+        ['timeout', { kind: 'timeout' }],
+        ['protocol', { kind: 'protocol', detail: 'x' }],
+        ['decode', { kind: 'decode', path: 'a', detail: 'b' }],
+        ['api', { kind: 'api', code: 500, message: 'boom' }],
+    ])('names the panel button for %s with the notice text alone', (_label, error) => {
+        const asked: string[] = [];
+        const spy = (msgid: string): string => {
+            asked.push(msgid);
+            return `<${msgid}>`;
+        };
+        const vm = present(failed(error), { ...context(), translate: spy });
+        if (vm.kind !== 'notice') throw new Error('expected a notice');
+        expect(vm.panelAccessibleName).toBe(vm.text);
+        expect(asked).not.toContain('Incus, {problem}');
     });
 
     it('never shows the diagnostic text of an error', () => {
@@ -756,7 +769,7 @@ describe('performFailureMessage', () => {
         [
             'permission denied',
             { kind: 'permission-denied' },
-            'Add your user to the "incus" group, then log in again',
+            'Add your user to the “incus” group, then log in again',
         ],
         [
             'unsupported',
@@ -1082,21 +1095,21 @@ describe('stoppedNotice', () => {
         Array.from({ length: count }, (_v, i) => stopped(`c${String(i + 1)}`));
 
     it('names the instance for one that stopped', () => {
-        expect(stoppedNotice([stopped('web01')], plain, plural)).toStrictEqual({
-            title: 'Instance stopped',
+        expect(stoppedNotice([stopped('web01')], plain, plural, 'en')).toStrictEqual({
+            title: 'Instance not running',
             message: 'web01 is no longer running.',
         });
     });
 
     it('says the instance is in an error state for the error status', () => {
-        expect(stoppedNotice([stopped('web01', 'error')], plain, plural)).toStrictEqual({
-            title: 'Instance stopped',
+        expect(stoppedNotice([stopped('web01', 'error')], plain, plural, 'en')).toStrictEqual({
+            title: 'Instance not running',
             message: 'web01 is in an error state.',
         });
     });
 
     it('counts the instances in the title for several', () => {
-        expect(stoppedNotice(many(2), plain, plural).title).toBe('2 instances stopped');
+        expect(stoppedNotice(many(2), plain, plural, 'en').title).toBe('2 instances not running');
     });
 
     it.each<[number, string]>([
@@ -1105,11 +1118,11 @@ describe('stoppedNotice', () => {
         [4, 'c1, c2, c3, +1 more'],
         [10, 'c1, c2, c3, +7 more'],
     ])('lists up to three names then the rest for %i instances', (count, message) => {
-        expect(stoppedNotice(many(count), plain, plural).message).toBe(message);
+        expect(stoppedNotice(many(count), plain, plural, 'en').message).toBe(message);
     });
 
     it('lists names only for a mix of stopped and error instances', () => {
-        const notice = stoppedNotice([stopped('a'), stopped('b', 'error')], plain, plural);
+        const notice = stoppedNotice([stopped('a'), stopped('b', 'error')], plain, plural, 'en');
         expect(notice.message).toBe('a, b');
     });
 
@@ -1118,26 +1131,64 @@ describe('stoppedNotice', () => {
             [instance({ name: 'a', project: 'lab', status: 'stopped' })],
             plain,
             plural,
+            'en',
         );
         expect(notice.message).not.toContain('lab');
     });
 
     it('passes every fixed string through translate', () => {
-        const one = stoppedNotice([stopped('web01')], translate, ngettext);
-        expect(one.title).toBe('[Instance stopped]');
+        const one = stoppedNotice([stopped('web01')], translate, ngettext, 'en');
+        expect(one.title).toBe('[Instance not running]');
         expect(one.message).toBe('[web01 is no longer running.]');
-        expect(stoppedNotice([stopped('web01', 'error')], translate, ngettext).message).toBe(
+        expect(stoppedNotice([stopped('web01', 'error')], translate, ngettext, 'en').message).toBe(
             '[web01 is in an error state.]',
         );
     });
 
     it('takes the title and the remainder from ngettext for several', () => {
-        const notice = stoppedNotice(many(5), translate, ngettext);
-        expect(notice.title).toBe('many:5 instances stopped');
+        const notice = stoppedNotice(many(5), translate, ngettext, 'en');
+        expect(notice.title).toBe('many:5 instances not running');
         expect(notice.message).toBe('c1, c2, c3, many:+2 more');
     });
 
     it('uses the singular remainder form for exactly one more', () => {
-        expect(stoppedNotice(many(4), translate, ngettext).message).toBe('c1, c2, c3, one:+1 more');
+        expect(stoppedNotice(many(4), translate, ngettext, 'en').message).toBe(
+            'c1, c2, c3, one:+1 more',
+        );
+    });
+
+    it.each<[string, Instance[]]>([
+        ['stopped', [stopped('web01')]],
+        ['in error', [stopped('web01', 'error')]],
+    ])('uses the same neutral title for one instance that is %s', (_label, items) => {
+        expect(stoppedNotice(items, plain, plural, 'en').title).toBe('Instance not running');
+    });
+
+    it('asks ngettext for the title with the neutral msgid in both forms', () => {
+        const seen: string[] = [];
+        stoppedNotice(
+            many(2),
+            plain,
+            (s, p, n) => {
+                if (s.includes('not running')) seen.push(s, p, String(n));
+                return s;
+            },
+            'en',
+        );
+        expect(seen).toStrictEqual([
+            '{count} instances not running',
+            '{count} instances not running',
+            '2',
+        ]);
+    });
+
+    it.each<[string, string, string]>([
+        ['en', '1,234 instances not running', 'c1, c2, c3, +1,231 more'],
+        ['de', '1.234 instances not running', 'c1, c2, c3, +1.231 more'],
+        ['ar-EG', '١٬٢٣٤ instances not running', 'c1, c2, c3, +١٬٢٣١ more'],
+    ])('formats the counts for the %s locale', (locale, title, message) => {
+        const notice = stoppedNotice(many(1234), plain, plural, locale);
+        expect(notice.title).toBe(title);
+        expect(notice.message).toBe(message);
     });
 });

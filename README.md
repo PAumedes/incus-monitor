@@ -11,7 +11,7 @@ click to start, stop, restart, freeze or open a shell.
 - Running-instance count in the panel
 - Containers and VMs across every project you can access
 - Live CPU, memory and network usage while the menu is open
-- Start, Stop, Restart, Freeze / Unfreeze
+- Start, stop, restart, freeze or unfreeze an instance
 - Open a shell (or a console for VMs without an agent) in your terminal
 - Copy an instance's address
 - Nothing else. On purpose.
@@ -29,8 +29,6 @@ On Ubuntu 24.04, the archive's Incus 0.6 is too old. Install Incus from the
 
 ## Install
 
-The extension supports Ubuntu 24.04 and 26.04 with the same package.
-
 - **apt (production)**: from the project's PPA, once published.
 - **.deb (testing)**: download it from a release, then
   `sudo apt install ./gnome-shell-extension-incus-monitor_<version>_all.deb`.
@@ -46,7 +44,7 @@ Then log out and back in, and enable the extension with Extension Manager or
 ## Privacy
 
 The extension talks only to the local Incus unix socket. It sends no data anywhere. It writes to
-the clipboard only when you click **Copy address**.
+the clipboard only when you press the copy button next to an address.
 
 ## Contributing
 
