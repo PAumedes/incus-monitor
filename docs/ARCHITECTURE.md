@@ -93,7 +93,7 @@ src/
     ├── indicator.ts        PanelMenu.Button: icon + optional running count.
     ├── clipboard.ts        St.Clipboard write (explicit user action only; needs St, so not an adapter).
     ├── instance-item.ts    One row per instance; expands into details and actions.
-    ├── replaceable-notice.ts One replaceable notification with an optional single button (failed action; stopped instances); destroyed in disable().
+    ├── replaceable-notice.ts One replaceable notification with an optional single button (failed action; stopped instances), filed under one shared "Incus Monitor" tray source; both destroyed in disable().
     ├── state-item.ts       Empty / error / unsupported states with a single actionable hint.
     └── footer.ts           Refresh and Preferences buttons.
 ```
