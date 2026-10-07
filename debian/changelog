@@ -1,3 +1,22 @@
+gnome-shell-extension-incus-monitor (1.0.0~rc.2) unstable; urgency=medium
+
+  * feat(ui): offer Show log on a failed action
+  * feat(ui): show the root disk usage of an instance when Incus reports it
+  * fix(ui): clear a failure notice after a later success and make the log
+    view robust to pager settings
+  * feat(ui): show how many instances are running at the top of the menu
+  * feat(ui): show the port forwards of an instance in its expanded row
+  * build: group make targets into test, build and release suites, add make
+    doctor and readable output
+  * feat(ui): notify when a running instance stops without a menu action
+  * docs: record the design review of B3, B4 and B8
+  * feat(ui): show notifications under Incus Monitor with the panel icon
+    instead of System
+  * fix(ui): clearer notification titles, locale-formatted counts, quieter
+    screen reader names and tidier wording
+
+ -- Patricio Aumedes <patricioaumedes@gmail.com>  Wed, 07 Oct 2026 11:49:09 -0300
+
 gnome-shell-extension-incus-monitor (1.0.0~rc.1) unstable; urgency=medium
 
   * Initial commit
