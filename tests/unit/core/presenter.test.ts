@@ -20,6 +20,7 @@ import {
     present,
     type PresentContext,
     type Row,
+    stoppedNotice,
 } from '../../../src/core/presenter.js';
 import { NO_RATES, Sampler, type LiveRates } from '../../../src/core/sampler.js';
 
@@ -1068,5 +1069,75 @@ describe('present: forwards line', () => {
         it('is the same text for equal forwards', () => {
             expect(spoken([forward(80, 80)])).toBe(spoken([forward(80, 80)]));
         });
+    });
+});
+
+describe('stoppedNotice', () => {
+    const plain = (msgid: string): string => msgid;
+    const plural = (singular: string, pluralForm: string, n: number): string =>
+        n === 1 ? singular : pluralForm;
+    const stopped = (name: string, status: InstanceStatus = 'stopped'): Instance =>
+        instance({ name, status, state: null });
+    const many = (count: number): Instance[] =>
+        Array.from({ length: count }, (_v, i) => stopped(`c${String(i + 1)}`));
+
+    it('names the instance for one that stopped', () => {
+        expect(stoppedNotice([stopped('web01')], plain, plural)).toStrictEqual({
+            title: 'Instance stopped',
+            message: 'web01 is no longer running.',
+        });
+    });
+
+    it('says the instance is in an error state for the error status', () => {
+        expect(stoppedNotice([stopped('web01', 'error')], plain, plural)).toStrictEqual({
+            title: 'Instance stopped',
+            message: 'web01 is in an error state.',
+        });
+    });
+
+    it('counts the instances in the title for several', () => {
+        expect(stoppedNotice(many(2), plain, plural).title).toBe('2 instances stopped');
+    });
+
+    it.each<[number, string]>([
+        [2, 'c1, c2'],
+        [3, 'c1, c2, c3'],
+        [4, 'c1, c2, c3, +1 more'],
+        [10, 'c1, c2, c3, +7 more'],
+    ])('lists up to three names then the rest for %i instances', (count, message) => {
+        expect(stoppedNotice(many(count), plain, plural).message).toBe(message);
+    });
+
+    it('lists names only for a mix of stopped and error instances', () => {
+        const notice = stoppedNotice([stopped('a'), stopped('b', 'error')], plain, plural);
+        expect(notice.message).toBe('a, b');
+    });
+
+    it('does not add the project to the names', () => {
+        const notice = stoppedNotice(
+            [instance({ name: 'a', project: 'lab', status: 'stopped' })],
+            plain,
+            plural,
+        );
+        expect(notice.message).not.toContain('lab');
+    });
+
+    it('passes every fixed string through translate', () => {
+        const one = stoppedNotice([stopped('web01')], translate, ngettext);
+        expect(one.title).toBe('[Instance stopped]');
+        expect(one.message).toBe('[web01 is no longer running.]');
+        expect(stoppedNotice([stopped('web01', 'error')], translate, ngettext).message).toBe(
+            '[web01 is in an error state.]',
+        );
+    });
+
+    it('takes the title and the remainder from ngettext for several', () => {
+        const notice = stoppedNotice(many(5), translate, ngettext);
+        expect(notice.title).toBe('many:5 instances stopped');
+        expect(notice.message).toBe('c1, c2, c3, many:+2 more');
+    });
+
+    it('uses the singular remainder form for exactly one more', () => {
+        expect(stoppedNotice(many(4), translate, ngettext).message).toBe('c1, c2, c3, one:+1 more');
     });
 });

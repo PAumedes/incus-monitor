@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: incus-monitor@patricioaumedes\n"
 "Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
-"POT-Creation-Date: 2026-10-07 00:04-0300\n"
+"POT-Creation-Date: 2026-10-07 10:09-0300\n"
 "PO-Revision-Date: 2026-10-05 22:30-0300\n"
 "Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -293,6 +293,22 @@ msgstr "Esta acción no está disponible para esta instancia"
 msgid "Could not confirm the result. Check the instance state."
 msgstr ""
 "No se pudo confirmar el resultado. Compruebe el estado de la instancia."
+
+#. Translators: {name} is the name of an instance.
+msgid "{name} is in an error state."
+msgstr "{name} está en estado de error."
+
+#. Translators: {name} is the name of an instance.
+msgid "{name} is no longer running."
+msgstr "{name} ya no se está ejecutando."
+
+msgid "Instance stopped"
+msgstr "Instancia detenida"
+
+msgid "{count} instances stopped"
+msgid_plural "{count} instances stopped"
+msgstr[0] "{count} instancias detenidas"
+msgstr[1] "{count} instancias detenidas"
 
 #. Translators: label of the setting for seconds between refreshes while the menu is closed.
 msgid "Refresh interval"

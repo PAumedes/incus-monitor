@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: incus-monitor@patricioaumedes\n"
 "Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
-"POT-Creation-Date: 2026-10-07 00:04-0300\n"
+"POT-Creation-Date: 2026-10-07 10:09-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
 "Language-Team: \n"
@@ -289,6 +289,22 @@ msgstr ""
 
 msgid "Could not confirm the result. Check the instance state."
 msgstr ""
+
+#. Translators: {name} is the name of an instance.
+msgid "{name} is in an error state."
+msgstr ""
+
+#. Translators: {name} is the name of an instance.
+msgid "{name} is no longer running."
+msgstr ""
+
+msgid "Instance stopped"
+msgstr ""
+
+msgid "{count} instances stopped"
+msgid_plural "{count} instances stopped"
+msgstr[0] ""
+msgstr[1] ""
 
 #. Translators: label of the setting for seconds between refreshes while the menu is closed.
 msgid "Refresh interval"
