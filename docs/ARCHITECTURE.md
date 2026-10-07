@@ -76,12 +76,14 @@ src/
 │   ├── metrics.ts          CPU %, memory, network rates from successive samples.
 │   ├── format.ts           Human-readable sizes, rates and durations (locale and gettext injected).
 │   ├── monitor-settings.ts Builds the Monitor's settings: live refresh interval, INCUS_SOCKET override.
+│   ├── exit-watch.ts       Finds running instances that stopped between polls without a menu action (a small stateful class, no I/O).
 │   ├── menu-state.ts       Pending and expanded rows by key, view-model reuse rules, structural equality.
 │   ├── menu-text.ts        The menu's own translated strings and the spoken forms of readouts.
 │   ├── monitor.ts          State machine + scheduling (idle/slow vs open/fast cadence, back-off), compat check, socket discovery re-run, `perform`.
 │   └── presenter.ts        Snapshot → ViewModel (sorting, labels, available actions, empty/error states).
 ├── adapters/
 │   ├── gio-transport.ts    Transport over Gio.SocketClient + Gio.UnixSocketAddress, cancellable.
+│   ├── glib-delay.ts       Clamps delays to what GLib timeouts accept.
 │   ├── glib-clock.ts       Clock over GLib.timeout_add; every source is tracked and removable.
 │   ├── settings.ts         Typed GSettings wrapper with change subscription.
 │   ├── socket-probe.ts     Classifies socket paths (missing / denied / usable) with Gio, without connecting.
@@ -91,7 +93,7 @@ src/
     ├── indicator.ts        PanelMenu.Button: icon + optional running count.
     ├── clipboard.ts        St.Clipboard write (explicit user action only; needs St, so not an adapter).
     ├── instance-item.ts    One row per instance; expands into details and actions.
-    ├── failure-notice.ts   Failed-action notification with an optional single button; destroyed in disable().
+    ├── replaceable-notice.ts One replaceable notification with an optional single button (failed action; stopped instances); destroyed in disable().
     ├── state-item.ts       Empty / error / unsupported states with a single actionable hint.
     └── footer.ts           Refresh and Preferences buttons.
 ```

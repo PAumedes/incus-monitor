@@ -34,6 +34,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T23 | B5: "5 of 7 running" summary line at the top of the menu                                                     | T22        | review |
 | T24 | B6: port forwards (proxy devices) in the expanded row                                                        | T23        | review |
 | T25 | Developer tooling: suites, readable output, `make doctor`, command-map docs, Makefile tests                  | T24        | review |
+| T26 | B7: notification when a running instance stops without a menu action                                         | T25        | review |
 
 ## Acceptance criteria
 
@@ -269,7 +270,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 
 - B9: a successful action on an instance destroys the pending failure notification for that
   instance (and only that one: a failure for another instance stays). Decision logic in core
-  with unit tests; the notification object stays in `ui/failure-notice.ts`.
+  with unit tests; the notification object stays in `ui/replaceable-notice.ts`.
 - B10: the `log` target script neutralises the user's `LESS` for the call (a short log must keep
   the terminal open even when `LESS` has `-F`), and uses `less` when no `PAGER` is set; names stay
   positional and absent from the script text. If no pager can run, the terminal still shows the
@@ -351,6 +352,38 @@ help` and the helper emit no escape codes and no emoji when not on a terminal, w
 - Manual: `make help` and `make check` in a terminal (colour, emoji, elapsed time), and `make check`
   piped to a file (plain).
 
+### T26: Stopped-unexpectedly notification
+
+A running instance that leaves `running` for `stopped` or `error` while no action on it was started
+from the menu is a crash, an out-of-memory kill, or a stop from a terminal. Incus does not say
+which, so all three are reported; the text says what was seen, not why.
+
+- **Detection** is a small stateful class in `core/` with no I/O, over two consecutive snapshots that both carry
+  instances (`ready`, or `refreshing` with its previous list): an instance running in the earlier
+  one and `stopped` or `error` in the later one is reported. Never reported: the first snapshot
+  after `enable()`, a reconnect after `unreachable`/`timeout` (no earlier list), an instance that
+  vanished (deleted or its project hidden), `busy`, `frozen`, `unknown`, and a restart that went
+  through `busy` between two polls.
+- **Menu actions are excluded.** Any key with an action in flight in `extension.ts` is skipped,
+  and the snapshot that `perform` refreshes before it returns is covered by that. While the action is
+  pending, a stop that the menu started never produces a second notification; a stop that
+  completes after the wait was cut off (timeout) may still be reported, which is accepted.
+- **One notification per poll, not per instance.** Several instances in one poll give one
+  notification listing up to 3 names, then "+N more" (`ngettext`). Each instance is reported once
+  per transition: it must be seen running again before it can be reported again.
+- **Notification.** Title "Instance stopped" / "N instances stopped" (translated, with the name in
+  the body for one), body "<name> is no longer running." and for `error` "<name> is in an error
+  state.". Names are the validated instance names; with several projects the project is not added.
+  It is transient, has no button, and replaces the previous one of its kind. The extension creates
+  it through the existing system-source pattern of `ReplaceableNotice` and destroys it in `disable()`.
+- **Transient on purpose.** The extension cannot tell a crash from a deliberate stop, so the
+  notification leaves no entry in the tray.
+- **No setting, no UI change** in the menu. The panel icon and rows are untouched.
+- Strings in `po/` regenerated; `es` translated. [UI_DESIGN.md](UI_DESIGN.md) and
+  [ARCHITECTURE.md](ARCHITECTURE.md) mention it.
+- Manual (throwaway container): `incus exec <c> -- kill -9 1`, or a stop from a terminal, shows the
+  notification once; a stop from the menu shows none; a restart from the menu shows none.
+
 ## After 1.0: backlog
 
 Ideas the maintainer wants kept, in rough priority order. None is scheduled. Before starting one,
@@ -374,6 +407,5 @@ icons only, a fixture recorded from a real Incus for every new field.
 - **B4: "More" details.** An optional collapsed section in the expanded row with the image
   description, last-used time, `limits.cpu` / `limits.memory` and swap usage. Needs a design
   review first: the expanded row is already four rows plus actions.
-- **B7: Stopped-unexpectedly notification.** Notify when a running instance leaves `running`
-  without an action started from the menu.
+- **B7:** now T26.
 - **B8: Pinned favourites and a filter** for long lists.

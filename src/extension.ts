@@ -21,9 +21,10 @@ import { launchFailure, menuText, showLogLabel } from './core/menu-text.js';
 import type { LaunchTarget } from './core/launch.js';
 import { Monitor, type Snapshot } from './core/monitor.js';
 import { monitorSettings } from './core/monitor-settings.js';
-import { failureNotice, present, type TerminalTarget } from './core/presenter.js';
+import { ExitWatch } from './core/exit-watch.js';
+import { failureNotice, present, stoppedNotice, type TerminalTarget } from './core/presenter.js';
 import { Sampler } from './core/sampler.js';
-import { FailureNotice } from './ui/failure-notice.js';
+import { ReplaceableNotice } from './ui/replaceable-notice.js';
 import { Indicator } from './ui/indicator.js';
 
 /** Everything `enable()` creates, so `disable()` can release it as one unit. */
@@ -36,7 +37,12 @@ interface Session {
     readonly formatter: Formatter;
     readonly locale: string;
     readonly indicator: Indicator;
-    readonly notice: FailureNotice;
+    readonly notice: ReplaceableNotice;
+    // A separate slot, so a stop never replaces a pending failure of an action.
+    readonly stopNotice: ReplaceableNotice;
+    readonly exitWatch: ExitWatch;
+    // Keys with a menu action in flight: their stops are expected and not reported.
+    readonly actionsInFlight: Set<string>;
     readonly unsubscribe: () => void;
     monitor: Monitor | undefined;
     // The last snapshot, so a presentation-only setting can redraw without a new request.
@@ -86,7 +92,10 @@ export default class IncusMonitorExtension extends Extension {
                 formatter: new Formatter(locale, _),
                 locale,
                 indicator,
-                notice: new FailureNotice(),
+                notice: new ReplaceableNotice(),
+                stopNotice: new ReplaceableNotice(),
+                exitWatch: new ExitWatch(),
+                actionsInFlight: new Set(),
                 unsubscribe,
                 monitor: undefined,
                 lastSnapshot: undefined,
@@ -99,6 +108,7 @@ export default class IncusMonitorExtension extends Extension {
         } catch (error) {
             if (this.#session !== null) {
                 this.#session.notice.dispose();
+                this.#session.stopNotice.dispose();
                 this.#disposeMonitor(this.#session);
             }
             this.#session = null;
@@ -118,6 +128,7 @@ export default class IncusMonitorExtension extends Extension {
         session.unsubscribe();
         session.indicator.destroy();
         session.notice.dispose();
+        session.stopNotice.dispose();
         session.clock.dispose();
         session.settings.dispose();
         // Last: cancelling in-flight work rethrows what a cancel listener throws.
@@ -141,8 +152,16 @@ export default class IncusMonitorExtension extends Extension {
                 session.sampler.record(snapshot);
                 session.lastSnapshot = snapshot;
                 this.#render(session, snapshot);
+                this.#reportStops(session, snapshot);
             },
         });
+    }
+
+    #reportStops(session: Session, snapshot: Snapshot): void {
+        const stopped = session.exitWatch.observe(snapshot, session.actionsInFlight);
+        if (stopped.length === 0) return;
+        const { title, message } = stoppedNotice(stopped, _, ngettext);
+        session.stopNotice.show('stopped', title, message);
     }
 
     #disposeMonitor(session: Session): void {
@@ -188,7 +207,10 @@ export default class IncusMonitorExtension extends Extension {
         const session = this.#session;
         const instance = this.#find(key);
         if (session?.monitor === undefined || instance === undefined) return;
-        const result = await session.monitor.perform(action, instance);
+        session.actionsInFlight.add(key);
+        const result = await session.monitor.perform(action, instance).finally(() => {
+            session.actionsInFlight.delete(key);
+        });
         // A disable and re-enable during the wait leaves a different session: say nothing then.
         if (this.#session !== session) return;
         if (result.ok) {

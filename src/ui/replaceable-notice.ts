@@ -7,19 +7,20 @@ export interface NoticeAction {
 }
 
 /**
- * A failure notification with at most one action button. It uses the shell's system source, as
+ * One notification at a time with at most one action button; a newer one replaces the older.
+ * It is used for failed actions and for unexpected stops. It uses the shell's system source, as
  * `Main.notify` does, so the extension owns no source: it only has to destroy the notification
  * it last showed. It does not use `notifyError`, which also writes the daemon's text to the
  * journal. With a button the notification is not transient, so it stays in the message tray and
  * the button remains reachable after the banner hides.
  */
-export class FailureNotice {
+export class ReplaceableNotice {
     #pending: MessageTray.Notification | undefined;
     #pendingKey: string | null = null;
 
-    /** Shows the failure of the instance `key`; `action` adds a single button. */
+    /** Shows a notification about the instance `key`; `action` adds a single button. */
     show(key: string, title: string, body: string, action?: NoticeAction): void {
-        // One failure at a time: a newer one replaces the older.
+        // One notification at a time: a newer one replaces the older.
         this.#clear();
         const source = MessageTray.getSystemSource();
         const notification = new MessageTray.Notification({
@@ -40,7 +41,7 @@ export class FailureNotice {
     }
 
     /**
-     * Drops the pending failure when a later action on the same instance succeeded. A success
+     * Drops the pending notification when a later action on the same instance succeeded. A success
      * cannot clear a newer failure of that instance: a row with an action in flight is inert and
      * offers no second action, so the failure shown is always the older one.
      */

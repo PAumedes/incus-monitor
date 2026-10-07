@@ -534,3 +534,43 @@ export function performFailureMessage(error: IncusError, translate: Translate): 
             return _('Could not confirm the result. Check the instance state.');
     }
 }
+
+const MAX_STOPPED_NAMES = 3;
+
+/** The notification for running instances that stopped without a menu action. */
+export function stoppedNotice(
+    instances: readonly Instance[],
+    _: Translate,
+    ngettext: PresentContext['ngettext'],
+): { readonly title: string; readonly message: string } {
+    const [only] = instances;
+    if (instances.length === 1 && only !== undefined) {
+        const template =
+            only.status === 'error'
+                ? // Translators: {name} is the name of an instance.
+                  _('{name} is in an error state.')
+                : // Translators: {name} is the name of an instance.
+                  _('{name} is no longer running.');
+        return {
+            title: _('Instance stopped'),
+            message: fill(template, { name: only.name }),
+        };
+    }
+    const names = instances.slice(0, MAX_STOPPED_NAMES).map(i => i.name);
+    const hidden = instances.length - names.length;
+    if (hidden > 0) {
+        // Translators: {count} is how many more stopped instances exist than are named. Both forms
+        // are identical on purpose: the count is a placeholder.
+        names.push(
+            fill(ngettext('+{count} more', '+{count} more', hidden), { count: String(hidden) }),
+        );
+    }
+    // Translators: {count} is how many instances stopped. Both forms are identical on purpose:
+    // the count is a placeholder.
+    const title = ngettext(
+        '{count} instances stopped',
+        '{count} instances stopped',
+        instances.length,
+    );
+    return { title: fill(title, { count: String(instances.length) }), message: names.join(', ') };
+}
