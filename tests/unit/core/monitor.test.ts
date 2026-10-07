@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { IncusError } from '../../../src/core/errors.js';
 import type { IncusClient } from '../../../src/core/incus/client.js';
-import type { Instance, InstanceStatus, Server } from '../../../src/core/incus/models.js';
+import {
+    instanceKey,
+    type Instance,
+    type InstanceStatus,
+    type Server,
+} from '../../../src/core/incus/models.js';
 import { REQUIRED_EXTENSIONS } from '../../../src/core/incus/compat.js';
 import { knownInstances, Monitor, type Snapshot } from '../../../src/core/monitor.js';
 import { err, ok } from '../../../src/core/result.js';
@@ -691,6 +696,68 @@ describe('Monitor perform', () => {
         expect(await first).toStrictEqual(ok(true));
         expect(await second).toMatchObject({ ok: false, error: { kind: 'unsupported' } });
         expect(client.changeState).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('Monitor isPerforming', () => {
+    const key = instanceKey(REF);
+
+    it('is false when nothing was asked', async () => {
+        const { monitor } = await started();
+        expect(monitor.isPerforming(key)).toBe(false);
+    });
+
+    it('is true from the call until the refresh after the action has landed', async () => {
+        const { monitor, client } = await started();
+        const refresh = deferred<Awaited<ReturnType<IncusClient['instances']>>>();
+        client.instances.mockReturnValueOnce(refresh.promise);
+        const done = monitor.perform('restart', REF);
+        expect(monitor.isPerforming(key)).toBe(true);
+        await flush();
+        expect(client.instances).toHaveBeenCalledTimes(2);
+        expect(monitor.isPerforming(key)).toBe(true);
+        refresh.resolve(ok([instance('web01', 'running')]));
+        await done;
+        await flush();
+        expect(monitor.isPerforming(key)).toBe(false);
+    });
+
+    it('reports true inside the onSnapshot emitted by the post-action refresh', async () => {
+        const recorded: boolean[] = [];
+        const watched: { monitor?: Monitor } = {};
+        const { monitor, client } = await started({
+            onSnapshot: () => recorded.push(watched.monitor?.isPerforming(key) === true),
+        });
+        watched.monitor = monitor;
+        client.instances.mockResolvedValueOnce(ok([instance('web01', 'stopped')]));
+        recorded.length = 0;
+        const done = monitor.perform('stop', REF);
+        await done;
+        await flush();
+        expect(recorded.length).toBeGreaterThan(0);
+        expect(recorded.every(Boolean)).toBe(true);
+        expect(monitor.isPerforming(key)).toBe(false);
+    });
+
+    it('stays true for an action queued behind another', async () => {
+        const { monitor, client } = await started();
+        const first = deferred<Awaited<ReturnType<IncusClient['changeState']>>>();
+        client.changeState.mockReturnValueOnce(first.promise);
+        const one = monitor.perform('restart', REF);
+        const two = monitor.perform('restart', REF);
+        first.resolve(ok({ path: '/1.0/operations/abc', project: 'default' }));
+        await one;
+        expect(monitor.isPerforming(key)).toBe(true);
+        await two;
+        await flush();
+        expect(monitor.isPerforming(key)).toBe(false);
+    });
+
+    it('is per instance', async () => {
+        const { monitor, client } = await started();
+        client.changeState.mockReturnValueOnce(new Promise(() => undefined));
+        void monitor.perform('restart', REF);
+        expect(monitor.isPerforming('default/db01')).toBe(false);
     });
 });
 

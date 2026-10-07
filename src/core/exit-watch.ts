@@ -12,7 +12,7 @@ export class ExitWatch {
     #last: ReadonlyMap<string, InstanceStatus> | null = null;
 
     /** Returns the instances that left `running` for `stopped` or `error`, in snapshot order. */
-    observe(snapshot: Snapshot, inFlightKeys: ReadonlySet<string>): readonly Instance[] {
+    observe(snapshot: Snapshot, isActedOn: (key: string) => boolean): readonly Instance[] {
         const instances = knownInstances(snapshot);
         if (instances === null) {
             this.#last = null;
@@ -26,7 +26,7 @@ export class ExitWatch {
             return (
                 previous.get(key) === 'running' &&
                 (i.status === 'stopped' || i.status === 'error') &&
-                !inFlightKeys.has(key)
+                !isActedOn(key)
             );
         });
     }

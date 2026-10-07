@@ -3,7 +3,8 @@ import type { Row, ViewModel } from './presenter.js';
 
 /**
  * What the menu remembers between renders, keyed by `Row.key`: rows with an action in flight and
- * rows the user expanded.
+ * rows the user expanded. Pending covers the click until the whole outcome is handled in the UI,
+ * which is longer than the Monitor's `isPerforming` window, so the two are kept apart.
  */
 export class MenuState {
     readonly #pending = new Set<string>();

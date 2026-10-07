@@ -76,10 +76,10 @@ src/
 │   ├── metrics.ts          CPU % and network rates from successive samples.
 │   ├── format.ts           Human-readable sizes, rates and durations (locale and gettext injected).
 │   ├── monitor-settings.ts Builds the Monitor's settings: live refresh interval, INCUS_SOCKET override.
-│   ├── exit-watch.ts       Finds running instances that stopped between polls without a menu action (a small stateful class, no I/O).
-│   ├── menu-state.ts       Pending and expanded rows by key, view-model reuse rules, structural equality.
+│   ├── exit-watch.ts       Finds running instances that stopped between polls without a menu action, asking the Monitor whether an action is under way (a small stateful class, no I/O).
+│   ├── menu-state.ts       UI-only pending (click to outcome shown) and expanded rows by key, view-model reuse rules, structural equality.
 │   ├── menu-text.ts        The menu's own translated strings and the spoken forms of readouts.
-│   ├── monitor.ts          State machine + scheduling (idle/slow vs open/fast cadence, back-off), compat check, socket discovery re-run, `perform`.
+│   ├── monitor.ts          State machine + scheduling (idle/slow vs open/fast cadence, back-off), compat check, socket discovery re-run, `perform` and `isPerforming` (the one record of actions in flight).
 │   └── presenter.ts        Snapshot → ViewModel (sorting, labels, available actions, empty/error states).
 ├── adapters/
 │   ├── gio-transport.ts    Transport over Gio.SocketClient + Gio.UnixSocketAddress, cancellable; its connect and request deadlines run on the injected Clock.
