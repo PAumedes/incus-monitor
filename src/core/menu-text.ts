@@ -73,7 +73,7 @@ export function workingName(rowName: string, _: Translate): string {
 export function launchFailure(
     error: LaunchError,
     _: Translate,
-): { readonly title: string; readonly message: string } {
+): { readonly title: string; readonly message: string; readonly diagnostic?: string } {
     const title = _('Could not open a terminal');
     switch (error.kind) {
         case 'no-terminal':
@@ -82,8 +82,12 @@ export function launchFailure(
                 message: _('No supported terminal was found. Set one in the preferences.'),
             };
         case 'spawn-failed':
-            // The detail is a diagnostic for logs, not UI text.
-            return { title, message: _('The terminal could not be started.') };
+            // The detail is for the log, not for the notice.
+            return {
+                title,
+                message: _('The terminal could not be started.'),
+                diagnostic: `terminal launch failed: ${error.detail}`,
+            };
         case 'invalid-name':
             return { title, message: _('This instance name cannot be used to open a terminal.') };
     }

@@ -41,6 +41,7 @@ interface Session {
     readonly notice: ReplaceableNotice;
     // A separate slot, so a stop never replaces a pending failure of an action.
     readonly stopNotice: ReplaceableNotice;
+    readonly launchNotice: ReplaceableNotice;
     readonly exitWatch: ExitWatch;
     readonly unsubscribe: () => void;
     monitor: Monitor | undefined;
@@ -95,6 +96,7 @@ export default class IncusMonitorExtension extends Extension {
                 noticeSource,
                 notice: new ReplaceableNotice(noticeSource),
                 stopNotice: new ReplaceableNotice(noticeSource),
+                launchNotice: new ReplaceableNotice(noticeSource),
                 exitWatch: new ExitWatch(),
                 unsubscribe,
                 monitor: undefined,
@@ -109,6 +111,7 @@ export default class IncusMonitorExtension extends Extension {
             if (this.#session !== null) {
                 this.#session.notice.dispose();
                 this.#session.stopNotice.dispose();
+                this.#session.launchNotice.dispose();
                 this.#disposeMonitor(this.#session);
             }
             this.#session = null;
@@ -129,6 +132,7 @@ export default class IncusMonitorExtension extends Extension {
         session.indicator.destroy();
         session.notice.dispose();
         session.stopNotice.dispose();
+        session.launchNotice.dispose();
         session.noticeSource.dispose();
         session.clock.dispose();
         session.settings.dispose();
@@ -238,7 +242,9 @@ export default class IncusMonitorExtension extends Extension {
             session.settings.terminalCommand,
         );
         if (launched.ok) return;
-        const { title, message } = launchFailure(launched.error, _);
-        Main.notify(title, message);
+        const { title, message, diagnostic } = launchFailure(launched.error, _);
+        // The notice cannot say why the spawn failed, so the cause goes to the journal.
+        if (diagnostic !== undefined) console.error(`Incus Monitor: ${diagnostic}`);
+        session.launchNotice.show('launch', title, message);
     }
 }

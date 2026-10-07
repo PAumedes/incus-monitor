@@ -99,7 +99,7 @@ describe('launchFailure', () => {
             message: '[This instance name cannot be used to open a terminal.]',
         },
     ] as const)('explains $error.kind with translated text', ({ error, message }) => {
-        expect(launchFailure(error, translate)).toEqual({
+        expect(launchFailure(error, translate)).toMatchObject({
             title: '[Could not open a terminal]',
             message,
         });
@@ -109,6 +109,20 @@ describe('launchFailure', () => {
         const { message } = launchFailure({ kind: 'spawn-failed', detail: 'SECRET' }, translate);
         expect(message).not.toContain('SECRET');
     });
+});
+
+describe('launchFailure diagnostic', () => {
+    it('carries the detail of a failed spawn for the log', () => {
+        const { diagnostic } = launchFailure({ kind: 'spawn-failed', detail: 'x' }, translate);
+        expect(diagnostic).toContain('x');
+    });
+
+    it.each([{ kind: 'no-terminal' }, { kind: 'invalid-name' }] as const)(
+        'has none for $kind',
+        error => {
+            expect(launchFailure(error, translate).diagnostic).toBeUndefined();
+        },
+    );
 });
 
 describe('showLogLabel', () => {
