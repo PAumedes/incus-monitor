@@ -46,7 +46,10 @@ export class Indicator {
     readonly #deps: IndicatorDeps;
     readonly #state = new MenuState();
     readonly #icon = new St.Icon({ style_class: 'system-status-icon' });
-    readonly #count = new St.Label({ y_align: Clutter.ActorAlign.CENTER });
+    readonly #count = new St.Label({
+        y_align: Clutter.ActorAlign.CENTER,
+        style_class: 'incus-monitor-tabular',
+    });
     readonly #summary = new PopupMenu.PopupBaseMenuItem({
         reactive: false,
         can_focus: false,

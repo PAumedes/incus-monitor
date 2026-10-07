@@ -14,7 +14,8 @@ Follow the [GNOME HIG](https://developer.gnome.org/hig/) for wording and capital
 ```
 
 - Icon: `package-x-generic-symbolic`. The number shows running instances, and is hidden when the
-  setting is off or the count is 0.
+  setting is off or the count is 0. It uses tabular numerals so the panel does not shift when the
+  count changes.
 - Error states change only the icon to `dialog-warning-symbolic`. No colour, no badge animation.
 - Accessible name: "Incus, 3 running".
 
@@ -168,8 +169,8 @@ runs that check on Ubuntu 24.04 and 26.04 images.
 ## Styling
 
 - Inherit the Shell theme. `stylesheet.css` holds the status dot, tabular numerals, dim text, the
-  details panel and its layout (spacing, the readout column widths, the inset terminal row), all with the
-  `incus-monitor-` prefix. High contrast is not measured.
+  details panel and its layout (spacing, fixed readout column widths so values do not shift, the
+  inset terminal row), all with the `incus-monitor-` prefix. High contrast is not measured.
 - **Contrast**: every text in the menu, including detail headings and values, needs at least 4.5:1
   against the menu background in light and dark styles. Detail rows are `PopupBaseMenuItem`s built
   with `{ activate: false, hover: false, can_focus: false }`: reactive, so the theme does not draw

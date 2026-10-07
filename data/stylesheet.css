@@ -47,6 +47,9 @@
 }
 
 .incus-monitor-rate {
+    /* Fits "↓ 999 MB/s", the longest common readout, so the up value does not shift as the down
+       rate changes. */
+    min-width: 7em;
     margin-right: 12px;
 }
 
