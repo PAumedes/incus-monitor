@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-or-later
-# Create (or reuse) a GNOME desktop VM, install Incus with a demo container inside it, install
-# the freshly built .deb, enable the extension and open the graphical console.
+# Create (or reuse) a GNOME desktop VM, install Incus with the demo instances inside it, install
+# the freshly built .deb, enable the extension, restart the desktop session and open the graphical
+# console on the logged-in desktop.
 #
 # usage: scripts/test-vm.sh <24.04|26.04>
 # needs: `make incus-package RELEASE=<release>` first, and virt-viewer on the host.
@@ -50,15 +51,21 @@ if ! incus info "$vm" >/dev/null 2>&1; then
         apt-get install -y -qq incus
         incus admin init --minimal
         usermod -aG incus-admin ubuntu
-        incus launch images:alpine/edge demo
-        # Throwaway local test VM: a known password lets you log in at the GDM prompt.
-        echo ubuntu:ubuntu | chpasswd
     "
 elif [[ $(incus list "$vm" --format csv --columns s </dev/null) == STOPPED ]]; then
     incus start "$vm" </dev/null
     echo "Waiting for the VM agent…"
     wait_for_agent
 fi
+
+# Throwaway local test VM, so every run converges it: a known password for the lock screen and
+# sudo, automatic login so the console opens on a desktop, and no two-minute boot wait for a
+# network that NetworkManager, not systemd-networkd, configures.
+incus exec "$vm" -- bash -euo pipefail -c "
+    echo ubuntu:ubuntu | chpasswd
+    printf '[daemon]\nAutomaticLoginEnable=true\nAutomaticLogin=ubuntu\n' >/etc/gdm3/custom.conf
+    systemctl mask systemd-networkd-wait-online.service
+" </dev/null
 
 # The previous push left a file owned by another uid; fs.protected_regular denies overwriting it in sticky /tmp.
 incus exec "$vm" -- rm -f /tmp/extension.deb </dev/null
@@ -69,7 +76,15 @@ incus exec "$vm" -- bash -euo pipefail -c "
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --reinstall /tmp/extension.deb
     sudo -u ubuntu dbus-run-session gsettings set org.gnome.shell enabled-extensions \"['$uuid']\"
 "
-incus restart "$vm"
 
-echo "Opening the console of $vm (GNOME on Ubuntu $release). Log in as ubuntu / ubuntu."
+# Same demo instances as `make demo` on the host. Root reaches the VM's own Incus; its daemon may
+# still be starting on a freshly booted VM.
+incus file push scripts/demo-instances.sh "$vm/root/demo-instances.sh" --mode 0755 </dev/null
+incus exec "$vm" -- bash -euo pipefail -c 'incus admin waitready --timeout 120 && /root/demo-instances.sh up' </dev/null
+
+# Restarting GDM ends the session that still runs the old extension code and logs in again
+# automatically, in seconds instead of the minutes a reboot of the VM takes.
+incus exec "$vm" -- systemctl restart gdm </dev/null
+
+echo "Opening the console of $vm (GNOME on Ubuntu $release), logged in as ubuntu (password ubuntu)."
 exec incus console "$vm" --type=vga
