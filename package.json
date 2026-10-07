@@ -1,6 +1,6 @@
 {
     "name": "incus-monitor",
-    "version": "1.0.0-rc.1",
+    "version": "1.0.0-rc.2",
     "private": true,
     "description": "GNOME Shell extension to monitor and control local Incus containers and virtual machines",
     "license": "GPL-2.0-or-later",
