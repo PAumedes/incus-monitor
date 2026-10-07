@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import { describe, expect, it } from 'vitest';
 
-import { cpuPercent, memoryPercent, networkRates } from '../../../src/core/metrics.js';
+import { cpuPercent, networkRates } from '../../../src/core/metrics.js';
 import type { Sample } from '../../../src/core/metrics.js';
 import type { InstanceState } from '../../../src/core/incus/models.js';
 
@@ -108,23 +108,6 @@ describe('cpuPercent', () => {
         const previous = sample(0, { startedAtMs: before, cpuUsageNs: 0 });
         const current = sample(SECOND_MS, { startedAtMs: after, cpuUsageNs: 100 });
         expect(cpuPercent(previous, current)).toBeNull();
-    });
-});
-
-describe('memoryPercent', () => {
-    it.each([
-        ['empty', 0, 1000, 0],
-        ['a quarter', 250, 1000, 25],
-        ['all of it', 1000, 1000, 100],
-        ['more than the limit', 1500, 1000, 100],
-    ])('%s', (_name, usage, total, expected) => {
-        expect(
-            memoryPercent(state({ memoryUsageBytes: usage, memoryTotalBytes: total })),
-        ).toBeCloseTo(expected);
-    });
-
-    it.each([0, -5])('is unknown when the total is %i', total => {
-        expect(memoryPercent(state({ memoryUsageBytes: 10, memoryTotalBytes: total }))).toBeNull();
     });
 });
 

@@ -73,7 +73,7 @@ src/
 │   ├── terminal-command.ts Terminal setting <-> argv prefix: whitespace split and join (pure).
 │   ├── socket.ts           Socket candidate discovery (system socket, incus-user socket).
 │   ├── sampler.ts          Last two samples per instance; derives CPU % and network rates for the presenter.
-│   ├── metrics.ts          CPU %, memory, network rates from successive samples.
+│   ├── metrics.ts          CPU % and network rates from successive samples.
 │   ├── format.ts           Human-readable sizes, rates and durations (locale and gettext injected).
 │   ├── monitor-settings.ts Builds the Monitor's settings: live refresh interval, INCUS_SOCKET override.
 │   ├── exit-watch.ts       Finds running instances that stopped between polls without a menu action (a small stateful class, no I/O).
