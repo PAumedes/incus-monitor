@@ -33,6 +33,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T22 | B9–B11: stale failure notice, pager robustness, terminal prefix rules                                        | T21        | review |
 | T23 | B5: "5 of 7 running" summary line at the top of the menu                                                     | T22        | review |
 | T24 | B6: port forwards (proxy devices) in the expanded row                                                        | T23        | review |
+| T25 | Developer tooling: suites, readable output, `make doctor`, command-map docs, Makefile tests                  | T24        | review |
 
 ## Acceptance criteria
 
@@ -316,6 +317,39 @@ restricted and answers "Proxy devices are forbidden", so the row shows up for sy
   [INCUS_API.md](INCUS_API.md#fields-we-read) describe the field.
 - Manual (system socket): an instance with one forward, several, a range, a `unix:` listener only
   (no row), and none (no row).
+
+### T25: Developer tooling: suites, readable output, doctor, docs, tests
+
+The Makefile is the single entry point, but it has no tests, its three suites (test, build, release)
+are not named as such, and its output is plain. Names used by CI, the git hooks and
+`.claude/settings.json` (`ci`, `check`, `lint`, `test`, `test-gjs`, `build`, `zip`, `format`,
+`incus-ci`, `incus-ci-all`, `incus-package`, `changelog-preview`, `release`, `smoke`, `nested`,
+`install`) keep their names; `logs` becomes `shell-logs`.
+
+- **Suites.** `make help` opens with a three-line quick start and groups targets as Test suite, Build
+  suite, Release suite, then Run and verify, Clean environments, Housekeeping. A new `make test-all`
+  runs `check` and `test-gjs`, which is the local gate in the pre-push hook. The variables users may
+  set (`RELEASE`, `SERIES`, `SCHEME`, `VM`, `BUMP`, `NEW_VERSION`) are listed in the help.
+- **Readable output.** One small helper, `scripts/lib/ui.sh`, prints steps, info, success, warning
+  and failure lines with an emoji and a colour per level, and a final line with the elapsed time.
+  The Makefile and the scripts that make calls first (`build`, `pack`, `build-deb`, `check-icons`,
+  `test-gjs`, `ppa-source`) use it. Plain ASCII and no colour when stdout is not a terminal,
+  `NO_COLOR` is set or `CI` is set; the emoji need a UTF-8 locale. Errors go to stderr. Nothing
+  else about what the scripts do changes, and the `incus` scripts are out of scope.
+- **`make doctor`.** Read-only: reports each required tool (node and the `.nvmrc` version, npm,
+  python3, gjs, zip, gettext, glib-compile-schemas, gnome-extensions) and each optional one
+  (incus, mutter-dev-bin, virt-viewer, debhelper), with the command that installs what is missing.
+  Exit code 1 only when a required tool is missing.
+- **Docs.** A command map in `docs/TESTING.md` (what each suite runs, how long, what it needs), a
+  quick start in `CONTRIBUTING.md` of at most ten lines, a header in the Makefile that explains the
+  suites, and a comment above each target group. `docs/RELEASING.md` names the release suite targets.
+- **Tests** (`scripts/tests/`, run by `make check`): every target has a description and a section;
+  `make help` lists exactly the documented targets; every `make <target>` mentioned in the docs,
+  `.claude/` and the scripts exists; `make -n` of each non-destructive target succeeds; `make
+help` and the helper emit no escape codes and no emoji when not on a terminal, with `NO_COLOR`
+  or with `CI`; `doctor` exits 1 with a required tool missing from `PATH` and 0 otherwise.
+- Manual: `make help` and `make check` in a terminal (colour, emoji, elapsed time), and `make check`
+  piped to a file (plain).
 
 ## After 1.0: backlog
 

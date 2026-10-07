@@ -18,20 +18,29 @@ Incus is the only other requirement: clean-environment builds and desktop VMs ru
 
 ## Everyday commands
 
+Quick start:
+
+```sh
+make doctor     # check that this machine has the tools
+make test-all   # run the unit, tooling and GJS tests
+make zip        # build the extension zip
+```
+
 `make` lists every target. The ones you will use most:
 
-| Command                          | What it does                                                |
-| -------------------------------- | ----------------------------------------------------------- |
-| `npm run test:watch`             | Unit tests in watch mode, for the TDD loop                  |
-| `make check`                     | Format, lint, types, unit coverage, icons, tooling tests    |
-| `make test-gjs`                  | GJS integration tests for adapters                          |
-| `make incus-ci RELEASE=24.04`    | The full CI pipeline in a clean Ubuntu container            |
-| `make install` / `make nested`   | Install for your user / open a nested GNOME Shell           |
-| `make incus-package` / `make vm` | Build the `.deb` in a container / boot a desktop VM with it |
-| `make changelog-preview`         | What the next release's changelog will say                  |
+| Command                          | What it does                                                    |
+| -------------------------------- | --------------------------------------------------------------- |
+| `npm run test:watch`             | Unit tests in watch mode, for the TDD loop                      |
+| `make test-all`                  | `check` and `test-gjs`, the local gate (also the pre-push hook) |
+| `make check`                     | Format, lint, types, unit coverage, icons, tooling tests        |
+| `make test-gjs`                  | GJS integration tests for adapters                              |
+| `make incus-ci RELEASE=24.04`    | The full CI pipeline in a clean Ubuntu container                |
+| `make install` / `make nested`   | Install for your user / open a nested GNOME Shell               |
+| `make incus-package` / `make vm` | Build the `.deb` in a container / boot a desktop VM with it     |
+| `make changelog-preview`         | What the next release's changelog will say                      |
 
 How to test on your own machine, step by step: [docs/TESTING.md](docs/TESTING.md#testing-on-your-machine).
-Logs: `make logs` (prefs: `journalctl -f -o cat /usr/bin/gjs`).
+Logs: `make shell-logs` (prefs: `journalctl -f -o cat /usr/bin/gjs`).
 
 ## Workflow
 

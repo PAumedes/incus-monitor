@@ -23,6 +23,23 @@ Rules:
 - Coverage thresholds (95 % lines and branches on `src/core/`) are a floor, not the goal. Every
   branch must be exercised **on purpose**.
 
+## Command map
+
+`make` lists every target; `make doctor` checks that this machine has the tools. Times are rough,
+on a warm cache.
+
+| Suite   | Command                 | Runs                                                                   | Needs                           | Time    |
+| ------- | ----------------------- | ---------------------------------------------------------------------- | ------------------------------- | ------- |
+| Test    | `make test`             | Vitest unit and contract tests                                         | node_modules                    | seconds |
+| Test    | `make check`            | format, lint, types, unit coverage, icon names, tooling tests (Python) | node_modules                    | ~1 min  |
+| Test    | `make test-gjs`         | adapters under GJS against a fake Incus socket                         | gjs                             | seconds |
+| Test    | `make test-all`         | `check` then `test-gjs`: the local gate, run by the pre-push hook      | both of the above               | ~1 min  |
+| Build   | `make build`            | compiles to `dist/` with schemas and translations                      | node_modules, gettext           | seconds |
+| Build   | `make zip` / `deb`      | the zip, the `.deb` (lintian-clean)                                    | zip; debhelper for the `.deb`   | seconds |
+| Release | `make ci`               | `check` + `test-gjs` + `package`: what CI runs                         | a provisioned Ubuntu            | ~2 min  |
+| Clean   | `make incus-ci`         | `ci` in a clean Ubuntu container (`RELEASE=24.04\|26.04`)              | Incus                           | minutes |
+| Run     | `make smoke` / `nested` | headless or nested GNOME Shell with the extension enabled              | gnome-shell; mutter-dev-bin 49+ | ~1 min  |
+
 ## Test tiers
 
 | Tier        | Location                   | Runner                            | Scope                                                               | Speed |
