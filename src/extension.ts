@@ -19,7 +19,7 @@ import { IncusClient } from './core/incus/client.js';
 import { instanceKey, type Instance } from './core/incus/models.js';
 import { launchFailure, menuText, showLogLabel } from './core/menu-text.js';
 import type { LaunchTarget } from './core/launch.js';
-import { Monitor, type Snapshot } from './core/monitor.js';
+import { knownInstances, Monitor, type Snapshot } from './core/monitor.js';
 import { monitorSettings } from './core/monitor-settings.js';
 import { ExitWatch } from './core/exit-watch.js';
 import { failureNotice, present, stoppedNotice, type TerminalTarget } from './core/presenter.js';
@@ -198,13 +198,7 @@ export default class IncusMonitorExtension extends Extension {
     #find(key: string): Instance | undefined {
         const state = this.#session?.monitor?.state;
         if (state === undefined) return undefined;
-        const known =
-            state.kind === 'ready'
-                ? state.instances
-                : state.kind === 'refreshing'
-                  ? state.previous
-                  : [];
-        return known.find(instance => instanceKey(instance) === key);
+        return (knownInstances(state) ?? []).find(instance => instanceKey(instance) === key);
     }
 
     async #perform(action: InstanceAction, key: string): Promise<void> {
