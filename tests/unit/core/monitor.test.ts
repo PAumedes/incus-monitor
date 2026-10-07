@@ -5,7 +5,7 @@ import type { IncusError } from '../../../src/core/errors.js';
 import type { IncusClient } from '../../../src/core/incus/client.js';
 import type { Instance, InstanceStatus, Server } from '../../../src/core/incus/models.js';
 import { REQUIRED_EXTENSIONS } from '../../../src/core/incus/compat.js';
-import { Monitor, type Snapshot } from '../../../src/core/monitor.js';
+import { knownInstances, Monitor, type Snapshot } from '../../../src/core/monitor.js';
 import { err, ok } from '../../../src/core/result.js';
 import { SYSTEM_SOCKET, USER_SOCKET } from '../../../src/core/socket.js';
 import type { SocketAccess } from '../../../src/core/ports.js';
@@ -1449,5 +1449,34 @@ describe('Monitor onSnapshot throwing on the ready emit', () => {
         expect(world.log.warn.mock.calls[0]?.[0]).toContain(
             'onSnapshot threw: Error: render break',
         );
+    });
+});
+
+describe('knownInstances', () => {
+    const list: readonly Instance[] = [
+        {
+            project: 'default',
+            name: 'a',
+            type: 'container',
+            status: 'running',
+            state: null,
+            forwards: [],
+        },
+    ];
+
+    it('returns the instances of a ready snapshot', () => {
+        expect(knownInstances({ kind: 'ready', instances: list, atMs: 0 })).toBe(list);
+    });
+
+    it('returns the previous instances of a refreshing snapshot', () => {
+        expect(knownInstances({ kind: 'refreshing', previous: list })).toBe(list);
+    });
+
+    it.each<Snapshot>([
+        { kind: 'idle' },
+        { kind: 'connecting' },
+        { kind: 'failed', error: { kind: 'unreachable' }, retryInMs: 2000 },
+    ])('returns null, not an empty list, when a $kind snapshot has no data', snapshot => {
+        expect(knownInstances(snapshot)).toBeNull();
     });
 });

@@ -20,6 +20,24 @@ export type Snapshot =
     | { readonly kind: 'refreshing'; readonly previous: readonly Instance[] }
     | { readonly kind: 'failed'; readonly error: IncusError; readonly retryInMs: number };
 
+/**
+ * The instances a snapshot still knows about: the fresh list, or the last one while a refresh
+ * runs. Null when there is no data (not started, connecting, failed), which is not the same as
+ * an empty host.
+ */
+export function knownInstances(snapshot: Snapshot): readonly Instance[] | null {
+    switch (snapshot.kind) {
+        case 'ready':
+            return snapshot.instances;
+        case 'refreshing':
+            return snapshot.previous;
+        case 'idle':
+        case 'connecting':
+        case 'failed':
+            return null;
+    }
+}
+
 export interface MonitorDeps {
     connect(socketPath: string): MonitorClient;
     readonly probe: SocketProbe;
@@ -148,7 +166,9 @@ export class Monitor {
 
     async #perform(action: InstanceAction, ref: InstanceRef): Promise<Outcome<true>> {
         const client = this.#client;
-        const target = this.#known().find(i => i.project === ref.project && i.name === ref.name);
+        const target = (knownInstances(this.#state) ?? []).find(
+            i => i.project === ref.project && i.name === ref.name,
+        );
         if (target === undefined || !client || !isActionAvailable(action, target.status)) {
             const reason = `${action} is not available for this instance`;
             return err({ kind: 'unsupported', reason });
@@ -161,12 +181,6 @@ export class Monitor {
         const failure = !finished.ok && finished.error.kind !== 'cancelled' ? finished : undefined;
         if (!isCancelled(signal)) await this.#refreshNow();
         return failure ?? ok(true);
-    }
-
-    #known(): readonly Instance[] {
-        const state = this.#state;
-        if (state.kind === 'ready') return state.instances;
-        return state.kind === 'refreshing' ? state.previous : [];
     }
 
     async #refreshNow(): Promise<void> {
