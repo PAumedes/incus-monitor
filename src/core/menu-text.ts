@@ -95,5 +95,5 @@ export function launchFailure(
 
 /** Label of the button on a failed-action notification that opens the instance log. */
 export function showLogLabel(_: Translate): string {
-    return _('Show log');
+    return _('Show Log');
 }
