@@ -219,3 +219,34 @@ Status: `todo` · `in-progress` · `review` · `done`
   the action and footer buttons, the dim label contrast on light and dark, and a preferences
   window whose Terminal row keeps no stray apply checkmark. The checklist is in
   [TESTING.md](TESTING.md#manual-matrix).
+
+## After 1.0: backlog
+
+Ideas the maintainer wants kept, in rough priority order. None is scheduled. Before starting one,
+write its acceptance criteria here as a task, then follow the usual workflow. Each keeps the
+rules in [ENGINEERING.md](ENGINEERING.md): minimal UI, no new runtime dependencies, Adwaita
+icons only, a fixture recorded from a real Incus for every new field.
+
+- **B1: "Show log" on a failed action.** The failure notification gets an action that opens a
+  terminal running `incus info <name> --show-log` (project passed), through the existing
+  launcher. Incus also serves per-instance logs under `/1.0/instances/<name>/logs`.
+- **B2: Disk usage row.** `state.disk.root` is `{usage, total}`; `total` is 0 without a quota and
+  the quota otherwise. Verified on Incus 6.0.5 with a Btrfs pool in the desktop VM (50 MiB
+  written showed `usage: 52908032, total: 0`; a 1 GiB root quota showed `total: 1073741824`).
+  `dir` pools report `{}`, so the row is hidden when absent. Record fixtures from a Btrfs pool
+  (and ZFS if available) for both Incus series first.
+- **B3: Group instances by project.** Today the list is flat, with the project shown on each
+  row when more than one project is visible. Group under a heading per project when there is
+  more than one, keeping running-first order inside a group and the stable order while the menu
+  is open. Groups for other resources (networks, volumes) are out of scope: this extension
+  monitors instances.
+- **B4: "More" details.** An optional collapsed section in the expanded row with the image
+  description, last-used time, `limits.cpu` / `limits.memory` and swap usage. Needs a design
+  review first: the expanded row is already four rows plus actions.
+- **B5: Header count.** A line in the menu such as "5 of 7 running". The panel keeps its single
+  number.
+- **B6: Proxy devices.** Show host-to-instance port forwards from the instance's expanded
+  devices. The API does not report listening ports, so this covers proxy devices only.
+- **B7: Stopped-unexpectedly notification.** Notify when a running instance leaves `running`
+  without an action started from the menu.
+- **B8: Pinned favourites and a filter** for long lists.
