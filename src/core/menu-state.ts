@@ -76,17 +76,15 @@ export function listKeys(vm: ViewModel): readonly string[] | undefined {
 export interface RowPlan {
     readonly create: readonly string[];
     readonly destroy: readonly string[];
-    readonly order: readonly string[];
 }
 
-/** Which rows to build and drop so each key keeps one item; `order` is the final sequence. */
+/** Which rows to build and drop so each key keeps one item. */
 export function planRows(previous: readonly string[], next: readonly string[]): RowPlan {
     const before = new Set(previous);
     const after = new Set(next);
     return {
         create: next.filter(key => !before.has(key)),
         destroy: previous.filter(key => !after.has(key)),
-        order: next,
     };
 }
 
