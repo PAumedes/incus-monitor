@@ -297,7 +297,8 @@ export class InstanceItem {
         this.#copy.opacity = hasAddress ? FULL_OPACITY : 0;
         this.#copy.reactive = hasAddress;
         this.#copy.can_focus = hasAddress;
-        this.#copy.accessible_name = this.#deps.text.copyAddress(details.address);
+        // An empty name leaves the hidden button unnamed instead of reading "Copy address —".
+        this.#copy.accessible_name = hasAddress ? this.#deps.text.copyAddress(details.address) : '';
         setSpoken(this.#uptime, details.uptime);
     }
 

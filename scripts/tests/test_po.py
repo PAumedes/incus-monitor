@@ -27,12 +27,11 @@ PRESENTER_MSGIDS = [
     "{name}, {status}",
     "{name}, {project}, {status}",
     "Incus, {count} running",
-    "Incus, {problem}",
     "Incus",
     "No instances",
     "No running instances",
     "Incus is not installed",
-    'Add your user to the "incus" group, then log in again',
+    "Add your user to the \u201cincus\u201d group, then log in again",
     "Incus is not responding",
     "Incus 6.0 or later is required",
     "Running",
@@ -56,6 +55,8 @@ PRESENTER_MSGIDS = [
     "Could not restart {name}",
     "Could not freeze {name}",
     "Could not unfreeze {name}",
+    "Instance not running",
+    "{count} instances not running",
 ]
 
 # Templates whose placeholders translators must keep: the entry needs a Translators: comment.

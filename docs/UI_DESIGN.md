@@ -127,7 +127,7 @@ Expanded row (`PopupSubMenuMenuItem`):
   available", and spoken download and upload text comes from a translated template. The
   instance type is shown by its icon only; the row's accessible name leaves it out.
 - **Failures** raise a single notification with the Incus message. Nothing modal. When the daemon answered with an error or timed out, it carries one "Show log" button that opens the instance's log in the terminal, and it stays in the message tray while it has the button. It is cleared when the next action on the same instance succeeds.
-- **Unexpected stops** raise one transient notification, without a button, when a running instance becomes `stopped` or `error` and no menu action on it is in flight. Several in one poll share one notification (three names, then "+N more"). It never replaces a failure notification, and the menu is unchanged.
+- **Unexpected stops** raise one transient notification, without a button, titled "Instance not running" ("N instances not running" for several), when a running instance becomes `stopped` or `error` and no menu action on it is in flight. Several in one poll share one notification (three names, then "+N more"). It never replaces a failure notification, and the menu is unchanged. Both notifications come from "Incus Monitor" with the panel icon.
 - **No destructive actions** (delete, rebuild, snapshot restore) in the menu. Ever.
 
 ## Empty and error states
@@ -167,8 +167,9 @@ runs that check on Ubuntu 24.04 and 26.04 images.
 
 ## Styling
 
-- Inherit the Shell theme. `stylesheet.css` holds only the status dot, tabular numerals and dim
-  text, all with the `incus-monitor-` prefix.
+- Inherit the Shell theme. `stylesheet.css` holds the status dot, tabular numerals, dim text, the
+  details panel and its layout (spacing, the readout column widths, the inset terminal row), all with the
+  `incus-monitor-` prefix. High contrast is not measured.
 - **Contrast**: every text in the menu, including detail headings and values, needs at least 4.5:1
   against the menu background in light and dark styles. Detail rows are `PopupBaseMenuItem`s built
   with `{ activate: false, hover: false, can_focus: false }`: reactive, so the theme does not draw
@@ -184,9 +185,12 @@ runs that check on Ubuntu 24.04 and 26.04 images.
 
 ## Preferences (GTK4 + libadwaita)
 
-One `Adw.PreferencesPage` with one group:
+One `Adw.PreferencesPage` with two groups. The first holds:
 
 - Refresh interval (spin row, 2–60 s)
 - Show running count (switch row)
 - Show stopped instances (switch row)
+
+The second holds only the Terminal row, so its one-line description sits directly above the field:
+
 - Terminal (entry row, empty field, explained by the group description). Documented, not guessed: the command is appended as separate arguments, so the program must accept it that way (`alacritty -e`, `xterm -e`, `konsole -e`, `gnome-terminal --`, `xfce4-terminal -x`). Terminals that take one command string (`xfce4-terminal -e`, `mate-terminal -e`) are not supported.

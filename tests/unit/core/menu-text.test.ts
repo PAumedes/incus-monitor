@@ -96,7 +96,7 @@ describe('launchFailure', () => {
         },
         {
             error: { kind: 'invalid-name' },
-            message: '[This instance name cannot be used to open a terminal]',
+            message: '[This instance name cannot be used to open a terminal.]',
         },
     ] as const)('explains $error.kind with translated text', ({ error, message }) => {
         expect(launchFailure(error, translate)).toEqual({

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: incus-monitor@patricioaumedes\n"
 "Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
-"POT-Creation-Date: 2026-10-07 10:09-0300\n"
+"POT-Creation-Date: 2026-10-07 11:36-0300\n"
 "PO-Revision-Date: 2026-10-05 22:30-0300\n"
 "Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -145,8 +145,8 @@ msgstr ""
 msgid "The terminal could not be started."
 msgstr "No se pudo iniciar la terminal."
 
-msgid "This instance name cannot be used to open a terminal"
-msgstr "Este nombre de instancia no se puede usar para abrir una terminal"
+msgid "This instance name cannot be used to open a terminal."
+msgstr "Este nombre de instancia no se puede usar para abrir una terminal."
 
 msgid "Show log"
 msgstr "Mostrar registro"
@@ -233,7 +233,7 @@ msgstr "Incus"
 msgid "Incus is not installed"
 msgstr "Incus no está instalado"
 
-msgid "Add your user to the \"incus\" group, then log in again"
+msgid "Add your user to the “incus” group, then log in again"
 msgstr "Añada su usuario al grupo «incus» y vuelva a iniciar sesión"
 
 msgid "Incus 6.0 or later is required"
@@ -241,10 +241,6 @@ msgstr "Se requiere Incus 6.0 o posterior"
 
 msgid "Incus is not responding"
 msgstr "Incus no responde"
-
-#. Translators: {problem} is why Incus cannot be used, such as "Incus is not installed".
-msgid "Incus, {problem}"
-msgstr "Incus, {problem}"
 
 #. Translators: {count} is the number of running instances. Both forms are identical on purpose:
 #. the count is a placeholder, so the plural form changes nothing in the sentence.
@@ -302,13 +298,15 @@ msgstr "{name} está en estado de error."
 msgid "{name} is no longer running."
 msgstr "{name} ya no se está ejecutando."
 
-msgid "Instance stopped"
-msgstr "Instancia detenida"
+msgid "Instance not running"
+msgstr "Instancia no activa"
 
-msgid "{count} instances stopped"
-msgid_plural "{count} instances stopped"
-msgstr[0] "{count} instancias detenidas"
-msgstr[1] "{count} instancias detenidas"
+#. Translators: {count} is how many instances are not running. Both forms are identical on
+#. purpose: the count is a placeholder.
+msgid "{count} instances not running"
+msgid_plural "{count} instances not running"
+msgstr[0] "{count} instancias no activas"
+msgstr[1] "{count} instancias no activas"
 
 #. Translators: label of the setting for seconds between refreshes while the menu is closed.
 msgid "Refresh interval"
@@ -330,10 +328,9 @@ msgstr "Mostrar instancias detenidas"
 msgid "Terminal"
 msgstr "Terminal"
 
-#. Translators: explains the Terminal field; leave it empty to detect a terminal.
-msgid "Command is added as separate arguments: xterm -e. Empty detects one."
-msgstr ""
-"El comando se añade como argumentos separados: xterm -e. Vacío detecta una."
+#. Translators: explains the Terminal field above it; "one" is a terminal.
+msgid "Leave empty to detect one. Example: “xterm -e”."
+msgstr "Déjelo vacío para detectarla. Ejemplo: «xterm -e»."
 
 msgid "Incus Monitor"
 msgstr "Incus Monitor"

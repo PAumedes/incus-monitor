@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: incus-monitor@patricioaumedes\n"
 "Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
-"POT-Creation-Date: 2026-10-07 10:09-0300\n"
+"POT-Creation-Date: 2026-10-07 11:36-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
 "Language-Team: \n"
@@ -142,7 +142,7 @@ msgstr ""
 msgid "The terminal could not be started."
 msgstr ""
 
-msgid "This instance name cannot be used to open a terminal"
+msgid "This instance name cannot be used to open a terminal."
 msgstr ""
 
 msgid "Show log"
@@ -230,17 +230,13 @@ msgstr ""
 msgid "Incus is not installed"
 msgstr ""
 
-msgid "Add your user to the \"incus\" group, then log in again"
+msgid "Add your user to the “incus” group, then log in again"
 msgstr ""
 
 msgid "Incus 6.0 or later is required"
 msgstr ""
 
 msgid "Incus is not responding"
-msgstr ""
-
-#. Translators: {problem} is why Incus cannot be used, such as "Incus is not installed".
-msgid "Incus, {problem}"
 msgstr ""
 
 #. Translators: {count} is the number of running instances. Both forms are identical on purpose:
@@ -298,11 +294,13 @@ msgstr ""
 msgid "{name} is no longer running."
 msgstr ""
 
-msgid "Instance stopped"
+msgid "Instance not running"
 msgstr ""
 
-msgid "{count} instances stopped"
-msgid_plural "{count} instances stopped"
+#. Translators: {count} is how many instances are not running. Both forms are identical on
+#. purpose: the count is a placeholder.
+msgid "{count} instances not running"
+msgid_plural "{count} instances not running"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -326,8 +324,8 @@ msgstr ""
 msgid "Terminal"
 msgstr ""
 
-#. Translators: explains the Terminal field; leave it empty to detect a terminal.
-msgid "Command is added as separate arguments: xterm -e. Empty detects one."
+#. Translators: explains the Terminal field above it; "one" is a terminal.
+msgid "Leave empty to detect one. Example: “xterm -e”."
 msgstr ""
 
 msgid "Incus Monitor"

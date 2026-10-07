@@ -35,6 +35,8 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T24 | B6: port forwards (proxy devices) in the expanded row                                                        | T23        | review |
 | T25 | Developer tooling: suites, readable output, `make doctor`, command-map docs, Makefile tests                  | T24        | review |
 | T26 | B7: notification when a running instance stops without a menu action                                         | T25        | review |
+| T27 | Notifications under the extension's own name and icon instead of "System"                                    | T26        | review |
+| T28 | Copy and accessibility polish from the whole-UI audit                                                        | T27        | review |
 
 ## Acceptance criteria
 
@@ -375,7 +377,7 @@ which, so all three are reported; the text says what was seen, not why.
   the body for one), body "<name> is no longer running." and for `error` "<name> is in an error
   state.". Names are the validated instance names; with several projects the project is not added.
   It is transient, has no button, and replaces the previous one of its kind. The extension creates
-  it through the existing system-source pattern of `ReplaceableNotice` and destroys it in `disable()`.
+  it through the existing system-source pattern of `ReplaceableNotice` and destroys it in `disable()`. T28 later renamed the titles to "Instance not running" and "N instances not running", because the text is also true for `error`.
 - **Transient on purpose.** The extension cannot tell a crash from a deliberate stop, so the
   notification leaves no entry in the tray.
 - **No setting, no UI change** in the menu. The panel icon and rows are untouched.
@@ -383,6 +385,58 @@ which, so all three are reported; the text says what was seen, not why.
   [ARCHITECTURE.md](ARCHITECTURE.md) mention it.
 - Manual (throwaway container): `incus exec <c> -- kill -9 1`, or a stop from a terminal, shows the
   notification once; a stop from the menu shows none; a restart from the menu shows none.
+
+### T27: Notifications under the extension's own name
+
+Both notifications (failed action, unexpected stop) are filed under the shell's "System" source with
+its gear icon, which reads as the operating system speaking. They should read as Incus Monitor.
+
+- **Own source.** The extension creates one `MessageTray.Source` titled "Incus Monitor" (a product
+  name, not translated) with the panel's icon, `package-x-generic-symbolic`, and adds it to the
+  message tray when the first notification is shown. [ADR-0006](adr/0006-adwaita-icons-only.md) stands: no Incus
+  logo, no bundled artwork.
+- **Lifecycle.** The source is destroyed in `disable()` with the notifications, and a second
+  `enable()` after it creates a new one. No notification or source outlives `disable()`.
+- **Compatibility.** The `Source` constructor and the way a source joins the tray must work on
+  GNOME 46 and 50. The ledger in [COMPATIBILITY.md](COMPATIBILITY.md) lists each call with the oldest version
+  checked in the shell's own source, and `getSystemSource` leaves the ledger if it is no longer used.
+- **No behaviour change** otherwise: transient or persistent as before, one notification at a time,
+  the same texts.
+- Manual: both notifications show "Incus Monitor" and the panel icon in the banner and in the tray
+  (the failure one), on a nested shell; `enable(); disable(); enable()` leaves one source.
+
+### T28: Copy and accessibility polish (UI audit)
+
+A read-only audit of the whole surface found small, verified defects. Each is a wording or
+detail fix with no new feature, setting or string beyond the replacements below.
+
+- **Panel name on failure.** The accessible name is the notice text alone. The wrapper msgid
+  "Incus, {problem}" is removed from the code, `po/incus-monitor@patricioaumedes.pot` and `po/es.po`.
+- **Unexpected-stop title.** A neutral wording that is true for `stopped` and `error`:
+  "Instance not running" and "{count} instances not running" replace the two titles that say
+  "stopped". The body texts stay.
+- **Locale-aware counts.** `stoppedNotice` and the stopped-instances notice format counts with
+  `formatCount` and the context locale, like the rest of the menu.
+- **Copy button with no address.** It carries an empty accessible name while it is hidden and
+  inert, so a screen reader never reads "Copy address —". It stays in the accessibility tree as an
+  unnamed button that cannot be focused or activated; removing it would change the row's height.
+  The empty name is valid on GNOME 46 and 50 (checked in the shell and Clutter sources).
+- **Terminal row help.** The explanation sits directly above the Terminal field, in a group of its
+  own, and fits on one line at the window's default width. English "Leave empty to detect one.
+  Example: “xterm -e”." and Spanish "Déjelo vacío para detectarla. Ejemplo: «xterm -e».". No comma in
+  the English msgid (the literal-string test in `prefs.test.ts` stops at the first one). The
+  separate-arguments constraint stays in UI_DESIGN.
+- **Punctuation.** A final period on "This instance name cannot be used to open a terminal"
+  (and es), and typographic quotes in the msgid `Add your user to the “incus” group, then log in again`.
+- **Clipboard wording** in README and `metadata.json`: "It writes to the clipboard only when you
+  press the copy button next to an address."
+- **Docs.** README: bullet capitalisation, and the sentence that repeats the Requirements table is
+  removed. UI_DESIGN says what `stylesheet.css` really contains (status dot, tabular numerals, dim
+  text, the details panel and its layout), and that high contrast is not measured.
+- Not done on purpose: turning off the preferences search (`search_enabled` is deprecated since libadwaita 1.6 and needs a lint exception for nothing visible), renaming "Forwards", a Loading row, tooltips, copy feedback, an install hint,
+  extra screenshot scenarios. A README screenshot waits for the maintainer.
+- Manual: the nested shell shows the new titles; a screen
+  reader reads the error states once.
 
 ## After 1.0: backlog
 
