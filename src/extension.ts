@@ -24,7 +24,7 @@ import { monitorSettings } from './core/monitor-settings.js';
 import { ExitWatch } from './core/exit-watch.js';
 import { failureNotice, present, stoppedNotice, type TerminalTarget } from './core/presenter.js';
 import { Sampler } from './core/sampler.js';
-import { ReplaceableNotice } from './ui/replaceable-notice.js';
+import { NoticeSource, ReplaceableNotice } from './ui/replaceable-notice.js';
 import { Indicator } from './ui/indicator.js';
 
 /** Everything `enable()` creates, so `disable()` can release it as one unit. */
@@ -37,6 +37,7 @@ interface Session {
     readonly formatter: Formatter;
     readonly locale: string;
     readonly indicator: Indicator;
+    readonly noticeSource: NoticeSource;
     readonly notice: ReplaceableNotice;
     // A separate slot, so a stop never replaces a pending failure of an action.
     readonly stopNotice: ReplaceableNotice;
@@ -56,6 +57,7 @@ export default class IncusMonitorExtension extends Extension {
     override enable(): void {
         const settings = new GioSettings(this.getSettings());
         const clock = new GLibClock();
+        const noticeSource = new NoticeSource();
         let indicator: Indicator | undefined;
         let unsubscribe = (): void => undefined;
         try {
@@ -92,8 +94,9 @@ export default class IncusMonitorExtension extends Extension {
                 formatter: new Formatter(locale, _),
                 locale,
                 indicator,
-                notice: new ReplaceableNotice(),
-                stopNotice: new ReplaceableNotice(),
+                noticeSource,
+                notice: new ReplaceableNotice(noticeSource),
+                stopNotice: new ReplaceableNotice(noticeSource),
                 exitWatch: new ExitWatch(),
                 actionsInFlight: new Set(),
                 unsubscribe,
@@ -129,6 +132,7 @@ export default class IncusMonitorExtension extends Extension {
         session.indicator.destroy();
         session.notice.dispose();
         session.stopNotice.dispose();
+        session.noticeSource.dispose();
         session.clock.dispose();
         session.settings.dispose();
         // Last: cancelling in-flight work rethrows what a cancel listener throws.
@@ -160,7 +164,7 @@ export default class IncusMonitorExtension extends Extension {
     #reportStops(session: Session, snapshot: Snapshot): void {
         const stopped = session.exitWatch.observe(snapshot, session.actionsInFlight);
         if (stopped.length === 0) return;
-        const { title, message } = stoppedNotice(stopped, _, ngettext);
+        const { title, message } = stoppedNotice(stopped, _, ngettext, session.locale);
         session.stopNotice.show('stopped', title, message);
     }
 
