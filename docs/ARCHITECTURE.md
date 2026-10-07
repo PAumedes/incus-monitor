@@ -111,6 +111,9 @@ update this file in the same merge request.
      seconds (default 10). This is enough for states and the running count.
    - **menu open**: refresh immediately, then `recursion=2` every 2 s for live metrics.
    - **on error**: exponential back-off (2 s → 60 s), reset on the first success.
+     A refresh asked for while a poll is in flight (Retry, opening the menu) gets one immediate
+     retry even if that poll fails, whatever the failure kind (including an unsupported
+     server). Failures nobody asked to retry wait for the back-off.
 3. Each poll produces an immutable `Snapshot`. The presenter maps it to a `ViewModel`. The UI keeps
    one item per row key, updates it only when its row changed (structural equality), and rebuilds
    nothing else. Presentation settings re-present the last snapshot without a new request.
