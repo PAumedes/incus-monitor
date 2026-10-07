@@ -1,3 +1,62 @@
+gnome-shell-extension-incus-monitor (1.0.0~rc.1) unstable; urgency=medium
+
+  * Initial commit
+  * feat(core): add Result type and IncusError union
+  * chore: ignore Python bytecode; record review contracts in roadmap
+  * feat(http): add strict incremental HTTP/1.1 codec
+  * feat(incus): decode and validate response envelopes
+  * feat(incus): decode server and instance models
+  * docs(roadmap): record review contracts for T08-T11
+  * feat(core): discover the Incus socket with cancellation
+  * feat(core): compute metrics and format readouts
+  * feat(incus): add Incus client over a transport port
+  * feat(incus): gate on required API extensions
+  * docs(roadmap): record T09-T12 contracts from T05-T08 reviews
+  * feat(core): add the polling monitor with actions and back-off
+  * feat(adapters): add Gio transport, clock, settings, probe and launcher
+  * feat(core): present snapshots as a view model
+  * feat(prefs): add the Adw preferences window
+  * feat(ui): add the panel indicator, menu and composition root
+  * feat(i18n): add the translation template and Spanish catalogue
+  * fix(adapters): write requests with GLib.Bytes.new so GNOME 46 can reach
+    Incus
+  * test(contract): record Incus 7.0.1 fixtures and run client tests on both
+    series
+  * fix(core): treat a CPU usage of -1 as unavailable instead of failing the
+    whole list
+  * feat(scripts): add demo instances and make the nested shell follow your
+    appearance
+  * feat(core): log the cause of a decode, api or timeout failure once per
+    episode
+  * fix(ui): keep detail rows readable by not styling them as insensitive
+  * feat(ui): add room before the copy button and a separator before Open
+    Shell
+  * feat(ui): separate Open Shell from the lifecycle buttons
+  * fix(ui): align the rules and inset the Open Shell highlight in the
+    expanded row
+  * feat(scripts): add a headless screenshot harness and skills for verifying
+    the extension live
+  * fix(ui): show only the IPv4 address and keep rows in place while the menu
+    is open
+  * fix(ui): release the highlight of the row header and Open Shell when the
+    pointer leaves
+  * fix(ui): keep keyboard focus on the row while an action runs and return it
+    afterwards
+  * fix(scripts): start a stopped test VM, drop a stale per-user copy and set
+    a login password
+  * fix(ui): stop Open Shell from taking focus when an action settles and keep
+    the address row height
+  * fix(scripts): remove the previous package from the test VM before pushing
+    the new one
+  * feat(ui): group the expanded row in a faint panel so the next instance
+    stands apart
+  * feat(scripts): reuse the desktop VM without rebooting and give it the
+    host's demo instances
+  * docs(roadmap): record the post-1.0 backlog
+  * docs(roadmap): mark the manual matrix ready for review
+
+ -- Patricio Aumedes <patricioaumedes@gmail.com>  Tue, 06 Oct 2026 22:21:48 -0300
+
 gnome-shell-extension-incus-monitor (0.1.0) unstable; urgency=medium
 
   * Initial development snapshot.
