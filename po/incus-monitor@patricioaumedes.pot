@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: incus-monitor@patricioaumedes\n"
 "Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
-"POT-Creation-Date: 2026-10-06 22:55-0300\n"
+"POT-Creation-Date: 2026-10-06 23:22-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
 "Language-Team: \n"
@@ -278,7 +278,7 @@ msgid "Terminal"
 msgstr ""
 
 #. Translators: explains the Terminal field; leave it empty to detect a terminal.
-msgid "Program then arguments separated by spaces. Empty detects a terminal."
+msgid "Command is added as separate arguments: xterm -e. Empty detects one."
 msgstr ""
 
 msgid "Incus Monitor"

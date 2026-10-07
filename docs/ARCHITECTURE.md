@@ -69,7 +69,7 @@ src/
 │   │   ├── validate.ts     Name and path validators, text sanitisers shared by decoders and client.
 │   │   ├── compat.ts       Required api_extensions and supported server versions.
 │   │   └── client.ts       IncusClient: server info, list instances, change state, wait for an operation.
-│   ├── launch.ts           Terminal candidates, detection and argv building for shell, console and log launches (pure). The `log` target runs a fixed `sh -c` script with the names as positional parameters; terminals whose `-e` takes a single string (e.g. `xfce4-terminal -e`) are unsupported for it.
+│   ├── launch.ts           Terminal candidates, detection and argv building for shell, console and log launches (pure). The `log` target runs a fixed `sh -c` script with the names as positional parameters; the command is appended as separate arguments, so terminals whose `-e` takes one string (e.g. `xfce4-terminal -e`) are unsupported.
 │   ├── terminal-command.ts Terminal setting <-> argv prefix: whitespace split and join (pure).
 │   ├── socket.ts           Socket candidate discovery (system socket, incus-user socket).
 │   ├── sampler.ts          Last two samples per instance; derives CPU % and network rates for the presenter.

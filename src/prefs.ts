@@ -74,7 +74,7 @@ export default class IncusMonitorPreferences extends ExtensionPreferences {
 
         const group = new Adw.PreferencesGroup({
             // Translators: explains the Terminal field; leave it empty to detect a terminal.
-            description: _('Program then arguments separated by spaces. Empty detects a terminal.'),
+            description: _('Command is added as separate arguments: xterm -e. Empty detects one.'),
         });
         for (const row of [refresh, runningCount, stoppedInstances, terminal]) group.add(row);
         const page = new Adw.PreferencesPage();

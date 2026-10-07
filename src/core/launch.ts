@@ -51,10 +51,17 @@ export function detectTerminal(lookup: ProgramLookup): readonly string[] | undef
 const LAUNCH_PROJECT = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/;
 
 // A terminal closes when its command ends, which would take the log with it, so the output goes
-// through a pager: the user scrolls, and quits with q, which is the only way the terminal closes.
-// The names arrive as positional parameters, never inside the script text, so no name can be
-// read as shell syntax.
-const LOG_SCRIPT = 'incus info "$1" --project "$2" --show-log 2>&1 | less';
+// through a pager: the user scrolls, and quits with q. The wrapper script exists to choose the
+// pager at run time and to keep the log on screen when none can run (it then waits for Enter).
+// LESS is emptied for the call because a user's `-F` would quit at once on a short log. The check
+// looks at the first word of the pager so a value with arguments such as `less -R` still counts,
+// and the pager is expanded unquoted so those arguments apply; a path with a space therefore
+// takes the fallback. The names arrive as positional parameters, never inside the script text, so
+// no name can be read as shell syntax.
+const LOG_SCRIPT =
+    'p=${PAGER:-less}; if command -v "${p%% *}" >/dev/null 2>&1; ' +
+    'then incus info "$1" --project "$2" --show-log 2>&1 | LESS= $p; ' +
+    'else incus info "$1" --project "$2" --show-log 2>&1; read -r _; fi';
 
 /** Names are validated here because they end up in argv, where `-x` would read as an option. */
 export function buildArgv(
@@ -68,13 +75,17 @@ export function buildArgv(
     ) {
         return err({ kind: 'invalid-name' });
     }
+    return ok([...prefix, ...command(target)]);
+}
+
+function command(target: LaunchTarget): readonly string[] {
     const incus = [target.name, '--project', target.project];
     switch (target.kind) {
         case 'shell':
-            return ok([...prefix, 'incus', 'exec', ...incus, '--', 'su', '-l']);
+            return ['incus', 'exec', ...incus, '--', 'su', '-l'];
         case 'console':
-            return ok([...prefix, 'incus', 'console', ...incus]);
+            return ['incus', 'console', ...incus];
         case 'log':
-            return ok([...prefix, 'sh', '-c', LOG_SCRIPT, 'sh', target.name, target.project]);
+            return ['sh', '-c', LOG_SCRIPT, 'sh', target.name, target.project];
     }
 }

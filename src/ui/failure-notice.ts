@@ -15,9 +15,10 @@ export interface NoticeAction {
  */
 export class FailureNotice {
     #pending: MessageTray.Notification | undefined;
+    #pendingKey: string | null = null;
 
-    /** Shows the failure; `action` adds a single button. */
-    show(title: string, body: string, action?: NoticeAction): void {
+    /** Shows the failure of the instance `key`; `action` adds a single button. */
+    show(key: string, title: string, body: string, action?: NoticeAction): void {
         // One failure at a time: a newer one replaces the older.
         this.#clear();
         const source = MessageTray.getSystemSource();
@@ -29,10 +30,22 @@ export class FailureNotice {
         });
         if (action !== undefined) notification.addAction(action.label, action.run);
         notification.connect('destroy', () => {
-            if (this.#pending === notification) this.#pending = undefined;
+            if (this.#pending !== notification) return;
+            this.#pending = undefined;
+            this.#pendingKey = null;
         });
         this.#pending = notification;
+        this.#pendingKey = key;
         source.addNotification(notification);
+    }
+
+    /**
+     * Drops the pending failure when a later action on the same instance succeeded. A success
+     * cannot clear a newer failure of that instance: a row with an action in flight is inert and
+     * offers no second action, so the failure shown is always the older one.
+     */
+    clear(key: string): void {
+        if (this.#pendingKey === key) this.#clear();
     }
 
     dispose(): void {
@@ -42,6 +55,7 @@ export class FailureNotice {
     #clear(): void {
         const pending = this.#pending;
         this.#pending = undefined;
+        this.#pendingKey = null;
         pending?.destroy();
     }
 }
