@@ -69,6 +69,9 @@ Expanded row (`PopupSubMenuMenuItem`):
   never moves key focus; Tab reaches the copy button, Open Shell
   and the action buttons in turn. The header's grey while expanded is the theme's `:checked` state
   and stays.
+- **Panel**: the expanded block (details, Open Shell, actions) sits on one faint translucent grey
+  panel with rounded bottom corners and a 4 px bottom margin, so it reads as one group and the next
+  header is clearly apart. It replaces, rather than stacks on, the tint Yaru paints on GNOME 50.
 - **Rows** are sorted running → frozen → stopped, then by name (locale-aware collation). While the
   menu is open, rows keep their position and new rows are appended, so a state change never moves a
   row under the pointer; closing the menu applies the full order. The
@@ -151,6 +154,9 @@ runs that check on Ubuntu 24.04 and 26.04 images.
   them insensitive (about 2:1 on light), but inert (no activation, hover highlight or focus stop).
   Never use `reactive: false` for rows that show text. Headings add an opacity of 200/255 on the
   normal text colour, which measured at least 5.5:1 (GNOME 46 Yaru light is the lowest).
+- The panel is `rgba(128, 128, 128, 0.12)` on the submenu actor (`.popup-sub-menu.incus-monitor-details`).
+  Measured heading contrast on it: 5.2:1 (46 light), 8.8:1 (46 dark), 7.3:1 (50 light), 6.9:1 (50 dark).
+  High contrast was not measured.
 - Status colours are the GNOME palette's semantic greens and yellows, and they must stay legible
   in light and dark styles and in high contrast.
 - No custom fonts, no hard-coded font sizes, no fixed widths except the readout column (in `em`).

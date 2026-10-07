@@ -124,6 +124,7 @@ export class InstanceItem {
             style_class: 'button',
             can_focus: true,
         });
+        this.item.menu.actor.add_style_class_name('incus-monitor-details');
         this.#terminal = new PopupMenu.PopupMenuItem('');
         this.#terminal.add_style_class_name('incus-monitor-terminal');
         this.#buildHeader();

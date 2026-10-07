@@ -58,6 +58,15 @@
     max-width: 24em;
 }
 
+/* One faint panel around the expanded block so it reads as a group and the next header is clearly
+   apart. The translucent grey works on light and dark, and replaces the tint some themes (Yaru on
+   GNOME 50) already paint instead of stacking on it. The top stays square under the header. */
+.popup-sub-menu.incus-monitor-details {
+    background-color: rgba(128, 128, 128, 0.12);
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 4px;
+}
+
 /* Themes inset a rule inside a submenu on one side only; the four-part selector outranks them. */
 .popup-sub-menu .popup-separator-menu-item.incus-monitor-rule:ltr,
 .popup-sub-menu .popup-separator-menu-item.incus-monitor-rule:rtl {
