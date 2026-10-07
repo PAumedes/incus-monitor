@@ -34,6 +34,11 @@ export function formatCount(value: number, locale: string): string {
     return new Intl.NumberFormat(intlLocale(locale)).format(value);
 }
 
+/** A port number in the user's digits; a separator would read as two numbers, so none is used. */
+export function formatPort(port: number, locale: string): string {
+    return new Intl.NumberFormat(intlLocale(locale), { useGrouping: false }).format(port);
+}
+
 function isDisplayable(value: number): boolean {
     return Number.isFinite(value) && value >= 0;
 }

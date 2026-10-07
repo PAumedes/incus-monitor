@@ -103,18 +103,19 @@ explicitly on per-instance calls.
 
 ## Fields we read
 
-| Field                                 | Use                                                                                                         |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `name`, `project`, `type`             | Identity, icon                                                                                              |
-| `status_code`                         | State (authoritative). `status` is display-only and localisation-prone.                                     |
-| `state.cpu.usage` (ns, cumulative)    | CPU %: Δusage / (Δt × allocated_time) × 100                                                                 |
-| `state.cpu.allocated_time` (ns per s) | Number of allocated CPUs × 1e9. Requires `instance_state_cpu_time`. 0 = not reported.                       |
-| `state.memory.usage`, `.total`        | Memory readout; `total` is the limit or the host total (0 = not reported)                                   |
-| `state.disk.root.usage`, `.total`     | Disk row; `total` 0 = no quota. `{}` on `dir` pools and `usage` `-1` on Incus 7.0 (cannot measure) = no row |
-| `state.network.<iface>.counters`      | Rx/Tx rates; skip `loopback` type                                                                           |
-| `state.network.<iface>.addresses[]`   | Primary address: first `global` IPv4 (IPv6 is not used)                                                     |
-| `state.processes`                     | `-1` on a VM means no agent → "Open Console"; absent is treated as `-1`                                     |
-| `state.started_at`                    | Uptime                                                                                                      |
+| Field                                 | Use                                                                                                                                                                                                                                                            |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`, `project`, `type`             | Identity, icon                                                                                                                                                                                                                                                 |
+| `status_code`                         | State (authoritative). `status` is display-only and localisation-prone.                                                                                                                                                                                        |
+| `state.cpu.usage` (ns, cumulative)    | CPU %: Δusage / (Δt × allocated_time) × 100                                                                                                                                                                                                                    |
+| `state.cpu.allocated_time` (ns per s) | Number of allocated CPUs × 1e9. Requires `instance_state_cpu_time`. 0 = not reported.                                                                                                                                                                          |
+| `state.memory.usage`, `.total`        | Memory readout; `total` is the limit or the host total (0 = not reported)                                                                                                                                                                                      |
+| `state.disk.root.usage`, `.total`     | Disk row; `total` 0 = no quota. `{}` on `dir` pools and `usage` `-1` on Incus 7.0 (cannot measure) = no row                                                                                                                                                    |
+| `state.network.<iface>.counters`      | Rx/Tx rates; skip `loopback` type                                                                                                                                                                                                                              |
+| `state.network.<iface>.addresses[]`   | Primary address: first `global` IPv4 (IPv6 is not used)                                                                                                                                                                                                        |
+| `state.processes`                     | `-1` on a VM means no agent → "Open Console"; absent is treated as `-1`                                                                                                                                                                                        |
+| `state.started_at`                    | Uptime                                                                                                                                                                                                                                                         |
+| `expanded_devices.<name>` (`proxy`)   | Forwards row: `listen` and `connect` as `tcp:`/`udp:` host and one port or range `a-b`, same protocol on both, `bind` absent or `host`; others skipped. The host is not kept. At most 64, in key order; comma-separated port lists are unsupported and skipped |
 
 Status mapping (`core/incus/decode.ts`): `103` Running and `113` Ready → running; `102` →
 stopped; `110` → frozen; `112` → error; `101`, `104`–`109` and `111` (Thawed, only seen briefly

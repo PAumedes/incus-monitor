@@ -9,6 +9,7 @@ export interface MenuText {
         readonly network: string;
         readonly address: string;
         readonly uptime: string;
+        readonly forwards: string;
     };
     readonly buttons: {
         readonly retry: string;
@@ -27,6 +28,7 @@ export function menuText(_: Translate): MenuText {
             network: _('Network'),
             address: _('Address'),
             uptime: _('Uptime'),
+            forwards: _('Forwards'),
         },
         buttons: {
             retry: _('Retry'),

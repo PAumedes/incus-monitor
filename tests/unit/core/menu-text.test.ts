@@ -23,6 +23,7 @@ describe('menuText', () => {
             network: '[Network]',
             address: '[Address]',
             uptime: '[Uptime]',
+            forwards: '[Forwards]',
         });
     });
 

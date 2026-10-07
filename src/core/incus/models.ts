@@ -33,6 +33,20 @@ export interface InstanceState {
     readonly primaryAddress: string | null;
 }
 
+export interface PortRange {
+    readonly first: number;
+    readonly last: number;
+}
+
+/** A host-bound `proxy` device that connects into the instance, tcp or udp only. */
+export type Protocol = 'tcp' | 'udp';
+
+export interface Forward {
+    readonly protocol: Protocol;
+    readonly listen: PortRange;
+    readonly connect: PortRange;
+}
+
 /** Stable identity of an instance across projects. */
 export const instanceKey = (ref: InstanceRef): string => `${ref.project}/${ref.name}`;
 
@@ -41,6 +55,8 @@ export interface Instance extends InstanceRef {
     readonly status: InstanceStatus;
     /** Null when the list was fetched without `recursion=2`. */
     readonly state: InstanceState | null;
+    /** Configuration, so it is known whatever the status; in device-key order, at most 64. */
+    readonly forwards: readonly Forward[];
 }
 
 export interface Server {

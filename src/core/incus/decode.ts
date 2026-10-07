@@ -4,11 +4,14 @@ import { err, ok, type Result } from '../result.js';
 
 import type {
     DiskUsage,
+    Forward,
     Instance,
     InstanceState,
     InstanceStatus,
     InstanceType,
     OperationResult,
+    PortRange,
+    Protocol,
     Server,
 } from './models.js';
 import { isArray, isInstanceName, isProjectName, isRecord, shortened } from './validate.js';
@@ -28,6 +31,10 @@ const CPU_USAGE = { min: -1, fallback: 0 };
 
 const IP_ADDRESS = /^[0-9A-Fa-f.:]{2,45}$/;
 const VERSION = /^[\x20-\x7e]{0,32}$/;
+// Host (optionally a bracketed IPv6 address) and port or range; the host is never kept.
+const PROXY_ADDRESS = /^(tcp|udp):(?:\[[^\]]+\]|[^:[\]]+):(\d+)(?:-(\d+))?$/;
+const MAX_PORT = 65535;
+const MAX_FORWARDS = 64;
 const INSTANCE_TYPES: readonly InstanceType[] = ['container', 'virtual-machine'];
 
 function fail(path: string, detail: string): Decoded<never> {
@@ -261,6 +268,46 @@ function decodeOptionalState(raw: Fields, path: string): Decoded<InstanceState |
     return decodeState(state, `${path}.state`);
 }
 
+function portRange(first: string, last: string | undefined): PortRange | null {
+    const range = { first: Number(first), last: Number(last ?? first) };
+    const inBounds = (port: number): boolean => port >= 1 && port <= MAX_PORT;
+    return inBounds(range.first) && inBounds(range.last) && range.first <= range.last
+        ? range
+        : null;
+}
+
+function proxyEnd(value: unknown): { protocol: Protocol; ports: PortRange } | null {
+    if (typeof value !== 'string') return null;
+    const [, protocol, first, last] = PROXY_ADDRESS.exec(value) ?? [];
+    if ((protocol !== 'tcp' && protocol !== 'udp') || first === undefined) return null;
+    const ports = portRange(first, last);
+    return ports === null ? null : { protocol, ports };
+}
+
+function decodeForward(entry: unknown): Forward | null {
+    if (!isRecord(entry) || own(entry, 'type') !== 'proxy') return null;
+    // With bind=instance the listen side is inside the instance, which would reverse the line.
+    const bind = own(entry, 'bind');
+    if (bind !== undefined && bind !== 'host') return null;
+    const listen = proxyEnd(own(entry, 'listen'));
+    const connect = proxyEnd(own(entry, 'connect'));
+    if (listen === null || connect?.protocol !== listen.protocol) return null;
+    return { protocol: listen.protocol, listen: listen.ports, connect: connect.ports };
+}
+
+/** Unusable devices (unix sockets, odd addresses) are left out: they are not an error. */
+function decodeForwards(raw: Fields): readonly Forward[] {
+    const devices = own(raw, 'expanded_devices');
+    if (!isRecord(devices)) return [];
+    const forwards: Forward[] = [];
+    for (const key of Object.keys(devices).sort()) {
+        const forward = decodeForward(devices[key]);
+        if (forward !== null) forwards.push(forward);
+        if (forwards.length === MAX_FORWARDS) break;
+    }
+    return forwards;
+}
+
 function decodeInstance(raw: unknown, path: string): Decoded<Instance> {
     if (!isRecord(raw)) return fail(path, 'expected an object');
     const project = requiredString(raw, 'project', path, isProjectName);
@@ -279,6 +326,7 @@ function decodeInstance(raw: unknown, path: string): Decoded<Instance> {
         type: type.value,
         status: status.value,
         state: state.value,
+        forwards: decodeForwards(raw),
     });
 }
 

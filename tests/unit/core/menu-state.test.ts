@@ -27,6 +27,8 @@ function row(overrides: Partial<Row> = {}): Row {
         readout: { cpu: '3 %', memory: '246 MB' },
         actions: [],
         details: null,
+        forwards: null,
+        forwardsSpoken: null,
         ...overrides,
     };
 }

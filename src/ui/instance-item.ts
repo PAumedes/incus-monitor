@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -102,6 +103,9 @@ export class InstanceItem {
     readonly #address = label('incus-monitor-tabular incus-monitor-address');
     readonly #copy: St.Button;
     readonly #uptime = label('incus-monitor-tabular');
+    // The notice class only bounds the width, so a long list wraps instead of widening the menu.
+    readonly #forwards = label('incus-monitor-tabular incus-monitor-notice');
+    readonly #forwardsItem: PopupMenu.PopupBaseMenuItem;
     readonly #separator = rule();
     readonly #terminal: PopupMenu.PopupMenuItem;
     readonly #buttonsSeparator = rule();
@@ -133,6 +137,7 @@ export class InstanceItem {
         releaseFocusOnLeave(this.item, deps.home);
         releaseFocusOnLeave(this.#terminal, deps.home);
         this.#diskItem = this.#buildDetails();
+        this.#forwardsItem = this.#buildForwards();
         this.#buildActions();
         this.#dot.connect('notify::mapped', () => {
             if (!this.#destroyed) this.#syncPulse();
@@ -151,11 +156,13 @@ export class InstanceItem {
         this.#inert = inert;
         this.#updateHeader(row);
         this.#updateDetails(row);
+        this.#updateForwards(row);
         if (previous === undefined || !structurallyEqual(previous.actions, row.actions)) {
             this.#updateActions(row);
         }
         // Set apart the actions from the details, and never leave a rule with nothing under it.
-        this.#separator.visible = row.details !== null && row.actions.length > 0;
+        this.#separator.visible =
+            (row.details !== null || row.forwards !== null) && row.actions.length > 0;
         this.#buttonsSeparator.visible =
             row.actions.some(a => a.kind === 'terminal') &&
             row.actions.some(a => a.kind === 'lifecycle');
@@ -197,19 +204,24 @@ export class InstanceItem {
         headingLabel.text = heading;
         row.add_child(headingLabel);
         for (const value of values) row.add_child(value);
-        this.#detailItems.push(row);
         this.item.menu.addMenuItem(row);
+        return row;
+    }
+
+    #detail(heading: string, ...values: St.Widget[]): PopupMenu.PopupBaseMenuItem {
+        const row = this.#detailRow(heading, ...values);
+        this.#detailItems.push(row);
         return row;
     }
 
     #buildDetails(): PopupMenu.PopupBaseMenuItem {
         const { headings } = this.#deps.text;
-        this.#detailRow(headings.memory, this.#memory);
-        const diskItem = this.#detailRow(headings.disk, this.#disk);
+        this.#detail(headings.memory, this.#memory);
+        const diskItem = this.#detail(headings.disk, this.#disk);
         const network = new St.BoxLayout();
         network.add_child(this.#down);
         network.add_child(this.#up);
-        this.#detailRow(headings.network, network);
+        this.#detail(headings.network, network);
         this.#copy.connect('clicked', () => {
             const address = this.#row?.details?.address;
             if (address !== undefined && address !== DASH) copyToClipboard(address);
@@ -217,9 +229,18 @@ export class InstanceItem {
         const address = new St.BoxLayout();
         address.add_child(this.#address);
         address.add_child(this.#copy);
-        this.#detailRow(headings.address, address);
-        this.#detailRow(headings.uptime, this.#uptime);
+        this.#detail(headings.address, address);
+        this.#detail(headings.uptime, this.#uptime);
         return diskItem;
+    }
+
+    // Not one of the details: forwards are configuration and show for a stopped instance too.
+    #buildForwards(): PopupMenu.PopupBaseMenuItem {
+        const { clutter_text: text } = this.#forwards;
+        text.line_wrap = true;
+        text.ellipsize = Pango.EllipsizeMode.NONE;
+        this.#forwards.x_expand = true;
+        return this.#detailRow(this.#deps.text.headings.forwards, this.#forwards);
     }
 
     #buildActions(): void {
@@ -278,6 +299,15 @@ export class InstanceItem {
         this.#copy.can_focus = hasAddress;
         this.#copy.accessible_name = this.#deps.text.copyAddress(details.address);
         setSpoken(this.#uptime, details.uptime);
+    }
+
+    #updateForwards(row: Row): void {
+        this.#forwardsItem.visible = row.forwards !== null;
+        if (row.forwards === null) return;
+        // The row is skipped when equal, but another field may have changed: leave the actors alone.
+        if (this.#forwards.text !== row.forwards) this.#forwards.text = row.forwards;
+        const spoken = row.forwardsSpoken ?? row.forwards;
+        if (this.#forwards.accessible_name !== spoken) this.#forwards.accessible_name = spoken;
     }
 
     // A focused widget that stops being focusable is left to Clutter, and GNOME 46 hands its key

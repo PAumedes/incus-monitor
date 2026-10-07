@@ -1,10 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import type { IncusError } from './errors.js';
-import { DASH, fill, formatCount, intlLocale, type Formatter, type Translate } from './format.js';
+import {
+    DASH,
+    fill,
+    formatCount,
+    formatPort,
+    intlLocale,
+    type Formatter,
+    type Translate,
+} from './format.js';
 import { actionsFor, type InstanceAction } from './incus/actions.js';
 import {
     instanceKey,
+    type Forward,
     type Instance,
+    type PortRange,
     type InstanceRef,
     type InstanceStatus,
     type InstanceType,
@@ -59,6 +69,10 @@ export interface Row {
     readonly readout: { readonly cpu: string; readonly memory: string } | null;
     readonly actions: readonly RowAction[];
     readonly details: RowDetails | null;
+    /** Null when the instance forwards no ports. */
+    readonly forwards: string | null;
+    /** The same forwards as a sentence for a screen reader; null exactly when `forwards` is. */
+    readonly forwardsSpoken: string | null;
 }
 
 interface PanelState {
@@ -106,6 +120,8 @@ const DOTS: Readonly<Record<InstanceStatus, DotClass>> = {
     busy: 'frozen',
     unknown: 'stopped',
 };
+
+const MAX_SHOWN_FORWARDS = 3;
 
 const STATUS_ORDER: Readonly<Record<InstanceStatus, number>> = {
     running: 0,
@@ -201,6 +217,62 @@ function detailsOf(instance: Instance, rates: LiveRates, ctx: PresentContext): R
     };
 }
 
+function portsText({ first, last }: PortRange, locale: string): string {
+    const from = formatPort(first, locale);
+    return first === last ? from : `${from}-${formatPort(last, locale)}`;
+}
+
+function spokenPorts({ first, last }: PortRange, ctx: PresentContext): string {
+    const from = formatPort(first, ctx.locale);
+    if (first === last) return from;
+    const _ = ctx.translate;
+    // Translators: a port range read aloud; {first} and {last} are port numbers such as "8000".
+    const template = _('{first} to {last}');
+    return fill(template, { first: from, last: formatPort(last, ctx.locale) });
+}
+
+function spokenForward(forward: Forward, ctx: PresentContext): string {
+    const { ngettext } = ctx;
+    const template = ngettext(
+        // Translators: read aloud, as in "TCP port 80 forwarded to 8080". {protocol} is TCP or
+        // UDP; the form follows the number of host ports.
+        '{protocol} port {listen} forwarded to {target}',
+        '{protocol} ports {listen} forwarded to {target}',
+        forward.listen.last - forward.listen.first + 1,
+    );
+    return fill(template, {
+        protocol: forward.protocol.toUpperCase(),
+        listen: spokenPorts(forward.listen, ctx),
+        target: spokenPorts(forward.connect, ctx),
+    });
+}
+
+function forwardsOf(
+    forwards: readonly Forward[],
+    ctx: PresentContext,
+): Pick<Row, 'forwards' | 'forwardsSpoken'> {
+    if (forwards.length === 0) return { forwards: null, forwardsSpoken: null };
+    const shown = forwards.slice(0, MAX_SHOWN_FORWARDS);
+    const lines = shown.map(
+        f =>
+            `${f.protocol} ${portsText(f.listen, ctx.locale)} → ${portsText(f.connect, ctx.locale)}`,
+    );
+    const spoken = shown.map(f => spokenForward(f, ctx));
+    const hidden = forwards.length - shown.length;
+    if (hidden > 0) {
+        const count = formatCount(hidden, ctx.locale);
+        // Translators: {count} is how many more port forwards exist than are listed. Both forms
+        // are identical on purpose: the count is a placeholder.
+        const more = ctx.ngettext('+{count} more', '+{count} more', hidden);
+        lines.push(fill(more, { count }));
+        // Translators: read aloud after the listed port forwards; {count} is how many more there
+        // are. Both forms are identical on purpose: the count is a placeholder.
+        const spokenMore = ctx.ngettext('{count} more', '{count} more', hidden);
+        spoken.push(fill(spokenMore, { count }));
+    }
+    return { forwards: lines.join(', '), forwardsSpoken: spoken.join(', ') };
+}
+
 function accessibleName(instance: Instance, status: string, showProject: boolean, _: Translate) {
     const values = { name: instance.name, project: instance.project, status };
     if (showProject) {
@@ -235,6 +307,7 @@ function rowOf(instance: Instance, showProject: boolean, ctx: PresentContext): R
                 : null,
         actions: actionsOf(instance, ctx.translate),
         details: detailsOf(instance, rates, ctx),
+        ...forwardsOf(instance.forwards, ctx),
     };
 }
 

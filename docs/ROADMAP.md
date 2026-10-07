@@ -32,6 +32,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T21 | B2: Disk usage row in the expanded instance                                                                  | T20        | review |
 | T22 | B9–B11: stale failure notice, pager robustness, terminal prefix rules                                        | T21        | review |
 | T23 | B5: "5 of 7 running" summary line at the top of the menu                                                     | T22        | review |
+| T24 | B6: port forwards (proxy devices) in the expanded row                                                        | T23        | review |
 
 ## Acceptance criteria
 
@@ -293,6 +294,29 @@ Status: `todo` · `in-progress` · `review` · `done`
 - Strings in `po/` regenerated; `es` translated. [UI_DESIGN.md](UI_DESIGN.md) describes the line.
 - Manual: 1 instance (no line), several with some stopped, the show-stopped setting off.
 
+### T24: Port forwards in the expanded row (B6)
+
+Fixture: `tests/fixtures/incus/6.0/instances-recursion1-proxy.json`, recorded from Incus 6.0.6.
+Incus keeps proxy devices in `expanded_devices` as `{ "type": "proxy", "listen": "tcp:0.0.0.0:8000-8002",
+"connect": "tcp:127.0.0.1:9000-9002" }`. Observed: the `incus-user` project (`user-<uid>`) is
+restricted and answers "Proxy devices are forbidden", so the row shows up for system-socket users only.
+
+- The instance model gets `forwards: readonly Forward[]`, decoded from `expanded_devices` entries of
+  type `proxy` whose `listen` and `connect` are `tcp:` or `udp:` with a host and a port or a port
+  range (`a-b`), with `bind` absent or `host`. In device-key order, at most 64. The row shows ports only (no listen host, so loopback versus all interfaces is not shown); `bind=instance` and comma-separated port lists are skipped. A `unix:` side, another protocol or a malformed
+  value skips that device; it never makes the whole list a `decode` error, because it is
+  configuration, not state.
+- The row presenter adds a `forwards` line only when there is at least one: "tcp 18080 → 80",
+  ranges as "tcp 8000-8002 → 9000-9002", up to 3 entries, then "+N more" (`ngettext`). Numbers go
+  through the existing formatters. It is shown whatever the instance state, since it is configuration.
+- The `ui/` adds one inert detail row in the expanded instance, following the existing detail rows
+  and their accessibility pattern. No new style, no icon beyond the existing ones, and the row's
+  text is updated only when it changes.
+- Strings in `po/` regenerated; `es` translated. [UI_DESIGN.md](UI_DESIGN.md) and
+  [INCUS_API.md](INCUS_API.md#fields-we-read) describe the field.
+- Manual (system socket): an instance with one forward, several, a range, a `unix:` listener only
+  (no row), and none (no row).
+
 ## After 1.0: backlog
 
 Ideas the maintainer wants kept, in rough priority order. None is scheduled. Before starting one,
@@ -316,10 +340,6 @@ icons only, a fixture recorded from a real Incus for every new field.
 - **B4: "More" details.** An optional collapsed section in the expanded row with the image
   description, last-used time, `limits.cpu` / `limits.memory` and swap usage. Needs a design
   review first: the expanded row is already four rows plus actions.
-- **B5: Header count.** A line in the menu such as "5 of 7 running". The panel keeps its single
-  number.
-- **B6: Proxy devices.** Show host-to-instance port forwards from the instance's expanded
-  devices. The API does not report listening ports, so this covers proxy devices only.
 - **B7: Stopped-unexpectedly notification.** Notify when a running instance leaves `running`
   without an action started from the menu.
 - **B8: Pinned favourites and a filter** for long lists.

@@ -32,6 +32,7 @@ function running(
         ...ref,
         type: 'container',
         status: 'running',
+        forwards: [],
         state: { ...BASE_STATE, cpuUsageNs, rxBytes, txBytes: 0, ...over },
     };
 }
@@ -55,7 +56,13 @@ describe('Sampler', () => {
 
     it('has no rates for an instance listed without state', () => {
         const sampler = new Sampler();
-        const stateless: Instance = { ...WEB, type: 'container', status: 'stopped', state: null };
+        const stateless: Instance = {
+            ...WEB,
+            type: 'container',
+            status: 'stopped',
+            state: null,
+            forwards: [],
+        };
         sampler.record(at(0, stateless));
         sampler.record(at(1000, stateless));
         expect(sampler.rates(WEB)).toEqual(NO_RATES);

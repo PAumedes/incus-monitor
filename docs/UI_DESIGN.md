@@ -45,6 +45,7 @@ Expanded row (`PopupSubMenuMenuItem`):
 │     Network    ↓ 12 kB/s  ↑ 1 kB/s           │
 │     Address    10.0.3.15                  ⧉  │
 │     Uptime     3 h 12 min                    │
+│     Forwards   tcp 18080 → 80, udp 5353 → 53 │
 │     ──────────────────────────────────────── │
 │     Open Shell                               │
 │     ──────────────────────────────────────── │
@@ -54,8 +55,18 @@ Expanded row (`PopupSubMenuMenuItem`):
 - The Disk row is omitted when the pool reports no usage (`dir`); it reads "X of Y" with a quota
   and "X" without; without a quota it shows the instance's root-volume usage, not pool capacity.
   It is an inert item like the others, so hiding it cannot move key focus.
+- The Forwards row lists the instance's `proxy` devices as `protocol listen → target`, ports or
+  `first-last` ranges without separators, in device-key order, at most three and then "+N more".
+  It shows ports only: the listen host is not shown, so loopback versus all interfaces is not
+  visible. Only host-bound forwards are listed (`bind=instance` is skipped), comma-separated port
+  lists are unsupported and skipped, and at most 64 devices are read. Unix-socket and other
+  non-tcp/udp proxies are left out. The value wraps instead of being cut, and has a spoken form
+  ("TCP port 18080 forwarded to 80") as its accessible name. It is configuration, so it shows for
+  a stopped instance too, and is hidden when there are none. It is an inert item like the others.
+- The rule above the actions shows when either the details or the Forwards row is shown, and an
+  action exists.
 - A `PopupSeparatorMenuItem` sets the actions (Open Shell and the buttons) apart from the
-  details. It is shown only when the details and at least one action are, and is destroyed with
+  details. It is shown only when the details (or the Forwards row) and at least one action are, and is destroyed with
   the row. A second one sets the buttons apart from Open Shell, shown only when both are. The
   address has an 8 px right margin so the copy button does not touch it.
 - **Rules and Open Shell inside the block.** Yaru and the stock theme inset a submenu rule on one
