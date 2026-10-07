@@ -12,6 +12,8 @@ import type {
 } from '../../../src/core/incus/models.js';
 import type { Snapshot } from '../../../src/core/monitor.js';
 import {
+    failureNotice,
+    offersLog,
     performFailureMessage,
     performFailureTitle,
     present,
@@ -703,5 +705,46 @@ describe('performFailureTitle', () => {
 
     it('keeps a name with replacement patterns literal', () => {
         expect(performFailureTitle('stop', 'a$&b', translate)).toBe('[Could not stop a$&b]');
+    });
+});
+
+describe('offersLog', () => {
+    it.each<[string, IncusError, boolean]>([
+        ['an api error', { kind: 'api', code: 500, message: 'boom' }, true],
+        ['a timeout', { kind: 'timeout' }, true],
+        ['a protocol error', { kind: 'protocol', detail: 'd' }, false],
+        ['a decode error', { kind: 'decode', path: 'p', detail: 'd' }, false],
+        ['incus not installed', { kind: 'not-installed' }, false],
+        ['permission denied', { kind: 'permission-denied' }, false],
+        ['an unreachable socket', { kind: 'unreachable' }, false],
+        ['an unsupported action', { kind: 'unsupported', reason: 'r' }, false],
+        ['a cancellation', { kind: 'cancelled' }, false],
+    ])('for %s the answer is %s', (_label, error, expected) => {
+        expect(offersLog(error)).toBe(expected);
+    });
+});
+
+describe('failureNotice', () => {
+    it.each<[string, IncusError, boolean]>([
+        ['api', { kind: 'api', code: 500, message: 'boom' }, true],
+        ['timeout', { kind: 'timeout' }, true],
+        ['protocol', { kind: 'protocol', detail: 'd' }, false],
+        ['decode', { kind: 'decode', path: 'p', detail: 'd' }, false],
+        ['not-installed', { kind: 'not-installed' }, false],
+        ['permission-denied', { kind: 'permission-denied' }, false],
+        ['unreachable', { kind: 'unreachable' }, false],
+        ['unsupported', { kind: 'unsupported', reason: 'r' }, false],
+    ])('for a %s error gives the title, the message and the log offer', (_kind, error, log) => {
+        const notice = failureNotice('stop', 'web01', error, translate);
+        expect(notice).toStrictEqual({
+            title: performFailureTitle('stop', 'web01', translate),
+            message: performFailureMessage(error, translate),
+            offersLog: log,
+        });
+        expect(notice?.title).toContain('web01');
+    });
+
+    it('gives nothing for a cancelled action', () => {
+        expect(failureNotice('stop', 'web01', { kind: 'cancelled' }, translate)).toBeNull();
     });
 });

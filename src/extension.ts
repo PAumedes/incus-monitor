@@ -17,16 +17,13 @@ import { Formatter, formatCount } from './core/format.js';
 import type { InstanceAction } from './core/incus/actions.js';
 import { IncusClient } from './core/incus/client.js';
 import { instanceKey, type Instance } from './core/incus/models.js';
-import { launchFailure, menuText } from './core/menu-text.js';
+import { launchFailure, menuText, showLogLabel } from './core/menu-text.js';
+import type { LaunchTarget } from './core/launch.js';
 import { Monitor, type Snapshot } from './core/monitor.js';
 import { monitorSettings } from './core/monitor-settings.js';
-import {
-    performFailureMessage,
-    performFailureTitle,
-    present,
-    type TerminalTarget,
-} from './core/presenter.js';
+import { failureNotice, present, type TerminalTarget } from './core/presenter.js';
 import { Sampler } from './core/sampler.js';
+import { FailureNotice } from './ui/failure-notice.js';
 import { Indicator } from './ui/indicator.js';
 
 /** Everything `enable()` creates, so `disable()` can release it as one unit. */
@@ -39,6 +36,7 @@ interface Session {
     readonly formatter: Formatter;
     readonly locale: string;
     readonly indicator: Indicator;
+    readonly notice: FailureNotice;
     readonly unsubscribe: () => void;
     monitor: Monitor | undefined;
     // The last snapshot, so a presentation-only setting can redraw without a new request.
@@ -88,6 +86,7 @@ export default class IncusMonitorExtension extends Extension {
                 formatter: new Formatter(locale, _),
                 locale,
                 indicator,
+                notice: new FailureNotice(),
                 unsubscribe,
                 monitor: undefined,
                 lastSnapshot: undefined,
@@ -98,7 +97,10 @@ export default class IncusMonitorExtension extends Extension {
             session.monitor = this.#createMonitor(session);
             session.monitor.start();
         } catch (error) {
-            if (this.#session !== null) this.#disposeMonitor(this.#session);
+            if (this.#session !== null) {
+                this.#session.notice.dispose();
+                this.#disposeMonitor(this.#session);
+            }
             this.#session = null;
             unsubscribe();
             indicator?.destroy();
@@ -115,6 +117,7 @@ export default class IncusMonitorExtension extends Extension {
         session.disposed = true;
         session.unsubscribe();
         session.indicator.destroy();
+        session.notice.dispose();
         session.clock.dispose();
         session.settings.dispose();
         // Last: cancelling in-flight work rethrows what a cancel listener throws.
@@ -188,17 +191,29 @@ export default class IncusMonitorExtension extends Extension {
         const result = await session.monitor.perform(action, instance);
         // A disable and re-enable during the wait leaves a different session: say nothing then.
         if (this.#session !== session || result.ok) return;
-        const message = performFailureMessage(result.error, _);
-        // Main.notify, not notifyError: the latter also writes the daemon's text to the journal.
-        if (message !== null) Main.notify(performFailureTitle(action, instance.name, _), message);
+        const notice = failureNotice(action, instance.name, result.error, _);
+        if (notice === null) return;
+        const logAction = notice.offersLog
+            ? {
+                  label: showLogLabel(_),
+                  run: () => {
+                      if (!session.disposed) this.#launch(session, 'log', instance);
+                  },
+              }
+            : undefined;
+        session.notice.show(notice.title, notice.message, logAction);
     }
 
     #openTerminal(target: TerminalTarget, key: string): void {
         const session = this.#session;
         const instance = this.#find(key);
         if (session === null || instance === undefined) return;
+        this.#launch(session, target, instance);
+    }
+
+    #launch(session: Session, kind: LaunchTarget['kind'], instance: Instance): void {
         const launched = session.launcher.launch(
-            { kind: target, name: instance.name, project: instance.project },
+            { kind, name: instance.name, project: instance.project },
             session.settings.terminalCommand,
         );
         if (launched.ok) return;

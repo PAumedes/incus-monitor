@@ -5,6 +5,7 @@ import { DASH } from '../../../src/core/format.js';
 import {
     launchFailure,
     menuText,
+    showLogLabel,
     spokenRate,
     spokenValue,
     workingName,
@@ -105,5 +106,11 @@ describe('launchFailure', () => {
     it('does not show the diagnostic detail of a failed spawn', () => {
         const { message } = launchFailure({ kind: 'spawn-failed', detail: 'SECRET' }, translate);
         expect(message).not.toContain('SECRET');
+    });
+});
+
+describe('showLogLabel', () => {
+    it('is the translated button label', () => {
+        expect(showLogLabel(translate)).toBe('[Show log]');
     });
 });
