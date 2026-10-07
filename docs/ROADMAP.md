@@ -404,8 +404,20 @@ icons only, a fixture recorded from a real Incus for every new field.
   more than one, keeping running-first order inside a group and the stable order while the menu
   is open. Groups for other resources (networks, volumes) are out of scope: this extension
   monitors instances.
+  **Design review (T26 session): recommended not to build.** Running-first across projects answers the
+  menu's one question better than groups; headings need a custom inert item, new frozen-order rules
+  and have no heading semantics for screen readers. The per-row project label already covers it.
+  Revisit only if users ask.
 - **B4: "More" details.** An optional collapsed section in the expanded row with the image
   description, last-used time, `limits.cpu` / `limits.memory` and swap usage. Needs a design
   review first: the expanded row is already four rows plus actions.
+  **Design review: recommended not to build.** A collapsed section inside an expanded row is two
+  levels of disclosure in a transient menu; the data belongs in `incus info`. If one field proves
+  valuable, add it as a single row.
 - **B7:** now T26.
 - **B8: Pinned favourites and a filter** for long lists.
+  **Design review.** Filter: recommended not to build (an `St.Entry` in a PopupMenu fights the menu's
+  key handling and Orca, and "show stopped instances" off already shortens long lists). Pins:
+  deferred until users ask; if built, a `pinned` GSettings key (`as`, `project/name`, at most 50,
+  never pruned automatically), a Pin/Unpin item in the expanded row, pinned tier above running,
+  order frozen while open, "Pinned" in the accessible name.
