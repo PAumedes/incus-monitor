@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: incus-monitor@patricioaumedes\n"
 "Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
-"POT-Creation-Date: 2026-10-05 22:36-0300\n"
+"POT-Creation-Date: 2026-10-06 22:30-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
 "Language-Team: \n"
@@ -137,6 +137,9 @@ msgid "The terminal could not be started."
 msgstr ""
 
 msgid "This instance name cannot be used to open a terminal"
+msgstr ""
+
+msgid "Show log"
 msgstr ""
 
 msgid "Running"

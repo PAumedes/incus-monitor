@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
+
+export interface NoticeAction {
+    readonly label: string;
+    readonly run: () => void;
+}
+
+/**
+ * A failure notification with at most one action button. It uses the shell's system source, as
+ * `Main.notify` does, so the extension owns no source: it only has to destroy the notification
+ * it last showed. It does not use `notifyError`, which also writes the daemon's text to the
+ * journal. With a button the notification is not transient, so it stays in the message tray and
+ * the button remains reachable after the banner hides.
+ */
+export class FailureNotice {
+    #pending: MessageTray.Notification | undefined;
+
+    /** Shows the failure; `action` adds a single button. */
+    show(title: string, body: string, action?: NoticeAction): void {
+        // One failure at a time: a newer one replaces the older.
+        this.#clear();
+        const source = MessageTray.getSystemSource();
+        const notification = new MessageTray.Notification({
+            source,
+            title,
+            body,
+            isTransient: action === undefined,
+        });
+        if (action !== undefined) notification.addAction(action.label, action.run);
+        notification.connect('destroy', () => {
+            if (this.#pending === notification) this.#pending = undefined;
+        });
+        this.#pending = notification;
+        source.addNotification(notification);
+    }
+
+    dispose(): void {
+        this.#clear();
+    }
+
+    #clear(): void {
+        const pending = this.#pending;
+        this.#pending = undefined;
+        pending?.destroy();
+    }
+}

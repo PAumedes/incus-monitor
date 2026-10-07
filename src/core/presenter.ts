@@ -293,7 +293,7 @@ function explain(error: IncusError, _: Translate): Explanation {
     }
 }
 
-function failureNotice(error: IncusError, ctx: PresentContext): ViewModel {
+function failureView(error: IncusError, ctx: PresentContext): ViewModel {
     if (error.kind === 'cancelled') return loading(ctx);
     const { text, retry } = explain(error, ctx.translate);
     const _ = ctx.translate;
@@ -348,7 +348,7 @@ export function present(snapshot: Snapshot, ctx: PresentContext): ViewModel {
         case 'refreshing':
             return listOf(snapshot.previous, ctx);
         case 'failed':
-            return failureNotice(snapshot.error, ctx);
+            return failureView(snapshot.error, ctx);
     }
 }
 
@@ -376,6 +376,39 @@ export function performFailureTitle(
             // Translators: {name} is the instance the action was run on.
             return fill(_('Could not unfreeze {name}'), { name });
     }
+}
+
+/** Whether the instance's log may explain this failure: the daemon answered or stalled on it. */
+export function offersLog(error: IncusError): boolean {
+    switch (error.kind) {
+        case 'api':
+        case 'timeout':
+            return true;
+        case 'protocol':
+        case 'decode':
+        case 'not-installed':
+        case 'permission-denied':
+        case 'unreachable':
+        case 'unsupported':
+        case 'cancelled':
+            return false;
+    }
+}
+
+/** The whole failure notification for an action, or null when nothing should be shown. */
+export function failureNotice(
+    action: InstanceAction,
+    instanceName: string,
+    error: IncusError,
+    translate: Translate,
+): { readonly title: string; readonly message: string; readonly offersLog: boolean } | null {
+    const message = performFailureMessage(error, translate);
+    if (message === null) return null;
+    return {
+        title: performFailureTitle(action, instanceName, translate),
+        message,
+        offersLog: offersLog(error),
+    };
 }
 
 /** Body of the notification for a failed action, or null when nothing should be shown. */

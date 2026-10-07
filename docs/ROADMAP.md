@@ -28,6 +28,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T17 | Release 1.0.0 ([RELEASING.md](RELEASING.md))                                                                 | T16        | todo   |
 | T18 | Private Launchpad PPA: GPG key, `dput` config, first `make ppa-source` uploads for noble and resolute        | T17        | todo   |
 | T19 | Move CI to the self-hosted GitLab runner (`.gitlab-ci.yml` is ready; set runner tags)                        | T00        | todo   |
+| T20 | B1: "Show log" action on the failure notification                                                            | T17        | review |
 
 ## Acceptance criteria
 
@@ -219,6 +220,28 @@ Status: `todo` · `in-progress` · `review` · `done`
   the action and footer buttons, the dim label contrast on light and dark, and a preferences
   window whose Terminal row keeps no stray apply checkmark. The checklist is in
   [TESTING.md](TESTING.md#manual-matrix).
+
+### T20: Show log on a failed action (B1)
+
+- A failed lifecycle action (start, stop, restart, freeze, unfreeze) keeps its notification and
+  adds one button, "Show log", that opens the terminal on that instance's log, only when the
+  daemon answered with an error or timed out (`api`, `timeout`). Other failures (no terminal
+  found, socket errors, undecodable replies) get no button. The notification stays in the tray
+  while it has the button.
+- `core/launch.ts` gains a `log` target. Its argv is built from validated names only, as for
+  `shell` and `console`: `incus info <name> --project <project> --show-log`, kept open for
+  reading: the output goes through the `less` pager (scroll, `q` to quit), so the terminal stays
+  open until the user quits. No shell string is built from names; the fixed `sh -c` wrapper
+  receives them as separate argv entries. Terminals whose `-e` takes one string are unsupported.
+- A launch failure from the button reports through the existing launch-failure notification.
+- The notification API used exists on GNOME 46 and 50 with the same behaviour (the constructor
+  takes one properties object on both) and is recorded in [COMPATIBILITY.md](COMPATIBILITY.md).
+  The extension owns no source: it uses the shell's system source. Clicking the button or
+  dismissing the notification leaves nothing behind, and `disable()` destroys the pending
+  notification.
+- New strings go through gettext and the `po/` template is regenerated.
+- Manual: trigger a failure on a throwaway instance (stop a frozen one, see T16) on GNOME 46 and
+  50 and check the button opens the log.
 
 ## After 1.0: backlog
 
