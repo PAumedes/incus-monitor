@@ -115,8 +115,9 @@ update this file in the same merge request.
    one item per row key, updates it only when its row changed (structural equality), and rebuilds
    nothing else. Presentation settings re-present the last snapshot without a new request.
 4. User intents (start, stop, …) go to `Monitor.perform(action, instance)`. It issues
-   `PUT …/state`, waits for the operation, refreshes, and returns a `Result` that the UI turns
-   into a notification on failure.
+   `PUT …/state`, waits for the operation, refreshes, and returns a `Result`. On failure,
+   `extension.ts` turns it into a notice (`failureNotice`) shown through `ReplaceableNotice`
+   (`ui/replaceable-notice.ts`).
 5. `disable()` cancels in-flight I/O (`Gio.Cancellable`), removes every main-loop source,
    disconnects every signal, destroys the indicator, and drops all references.
 

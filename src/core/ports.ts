@@ -29,9 +29,8 @@ export interface Transport {
 
 /**
  * Time and one-shot timers. Total: scheduling never throws. `setTimeout` returns a function that
- * cancels the timer. The adapter's callback wrapper must return `GLib.SOURCE_REMOVE`, and the
- * cancel function must be a no-op once the timer fired or was cancelled, so it never removes a
- * reused source ID. `now()` is monotonic milliseconds, not wall time.
+ * cancels the timer. The callback fires at most once. Cancelling is idempotent and safe after the
+ * timer has fired. `now()` is monotonic milliseconds, not wall time.
  */
 export interface Clock {
     setTimeout(ms: number, callback: () => void): () => void;
