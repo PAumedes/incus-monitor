@@ -149,15 +149,13 @@ export class Indicator {
 
     /** One item per row key: removed rows go, new ones are built, the rest are updated in place. */
     #drawRows(rows: readonly Row[]): void {
-        const plan = planRows(
-            [...this.#items.keys()],
-            orderRows(
-                this.#order,
-                rows.map(r => r.key),
-                this.#menuOpen,
-            ),
+        const order = orderRows(
+            this.#order,
+            rows.map(r => r.key),
+            this.#menuOpen,
         );
-        this.#order = plan.order;
+        const plan = planRows([...this.#items.keys()], order);
+        this.#order = order;
         for (const key of plan.destroy) {
             this.#items.get(key)?.destroy();
             this.#items.delete(key);
@@ -174,7 +172,7 @@ export class Indicator {
             this.#body.addMenuItem(item.item);
             item.restoreExpansion();
         }
-        this.#reorder(plan.order);
+        this.#reorder(order);
     }
 
     #createItem(row: Row, inert: boolean): InstanceItem {

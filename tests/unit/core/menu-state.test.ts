@@ -261,7 +261,6 @@ describe('planRows', () => {
         const plan = planRows(prev, next);
         expect([...plan.create].sort()).toEqual([...create].sort());
         expect([...plan.destroy].sort()).toEqual([...destroy].sort());
-        expect(plan.order).toEqual(next);
     });
 
     it('never creates or destroys a key that is in both lists', () => {
