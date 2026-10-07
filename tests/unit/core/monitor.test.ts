@@ -499,6 +499,33 @@ describe('Monitor single request in flight', () => {
         await flush();
         expect(instancesFlag(client.instances.mock.calls)).toStrictEqual([false, true]);
     });
+
+    it('retries at once when a refresh was asked for during a poll that then fails', async () => {
+        const { monitor, client, kinds, pending } = await inFlight();
+        monitor.refresh();
+        await flush();
+        pending.resolve(err({ kind: 'timeout' }));
+        await flush();
+        expect(client.instances).toHaveBeenCalledTimes(2);
+        expect(kinds().at(-1)).toBe('ready');
+    });
+
+    it('does not loop or skip the back-off when the requested retry fails too', async () => {
+        const { monitor, clock, client, pending } = await inFlight();
+        client.instances.mockResolvedValue(err({ kind: 'timeout' }));
+        monitor.refresh();
+        await flush();
+        pending.resolve(err({ kind: 'timeout' }));
+        await flush();
+        expect(client.instances).toHaveBeenCalledTimes(2);
+        expect(monitor.state).toMatchObject({ kind: 'failed', retryInMs: 4000 });
+        clock.advance(3999);
+        await flush();
+        expect(client.instances).toHaveBeenCalledTimes(2);
+        clock.advance(1);
+        await flush();
+        expect(client.instances).toHaveBeenCalledTimes(3);
+    });
 });
 
 describe('Monitor perform', () => {
@@ -1191,6 +1218,25 @@ describe('Monitor re-entrancy from onSnapshot', () => {
             expect(world.monitor.state.kind).toBe('ready');
         },
     );
+
+    it('retries once, not in a loop, when refresh() is called during the failed emit', async () => {
+        const holder: { monitor?: Monitor } = {};
+        let armed = true;
+        const world = setup({
+            onSnapshot: s => {
+                if (s.kind !== 'failed' || !armed) return;
+                armed = false;
+                holder.monitor?.refresh();
+            },
+        });
+        holder.monitor = world.monitor;
+        world.client.instances.mockResolvedValue(err({ kind: 'timeout' }));
+        world.monitor.start();
+        await flush();
+        expect(world.client.instances).toHaveBeenCalledTimes(2);
+        expect(world.clock.pending).toBe(1);
+        expect(world.monitor.state).toMatchObject({ kind: 'failed', retryInMs: 4000 });
+    });
 });
 
 describe('Monitor with unprintable thrown values', () => {
@@ -1409,7 +1455,7 @@ describe('Monitor dispose and menu edge branches', () => {
 });
 
 describe('Monitor refresh during a failing poll', () => {
-    it('waits for the back-off instead of retrying at once', async () => {
+    it('retries at once, not after the back-off, and keeps no stale timer', async () => {
         const world = setup();
         const pending = deferred<Awaited<ReturnType<IncusClient['instances']>>>();
         world.client.instances.mockReturnValueOnce(pending.promise);
@@ -1418,19 +1464,9 @@ describe('Monitor refresh during a failing poll', () => {
         world.monitor.refresh();
         pending.resolve(err({ kind: 'unreachable' }));
         await flush();
-        expect(world.client.instances).toHaveBeenCalledTimes(1);
-        expect(world.clock.pending).toBe(1);
-        expect(world.monitor.state).toStrictEqual({
-            kind: 'failed',
-            error: { kind: 'unreachable' },
-            retryInMs: 2000,
-        });
-        world.clock.advance(1999);
-        await flush();
-        expect(world.client.instances).toHaveBeenCalledTimes(1);
-        world.clock.advance(1);
-        await flush();
         expect(world.client.instances).toHaveBeenCalledTimes(2);
+        expect(world.monitor.state.kind).toBe('ready');
+        expect(world.clock.pending).toBe(1);
     });
 });
 

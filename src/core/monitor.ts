@@ -276,14 +276,15 @@ export class Monitor {
 
     /** The single guard of the polling loop: nothing a port or callback does may end it. */
     async #cycle(): Promise<void> {
-        let succeeded = false;
         try {
-            succeeded = await this.#attempt(this.#source.signal);
+            await this.#attempt(this.#source.signal);
         } catch (error) {
             this.#warnOnce(`${PROTOCOL_ERROR}: ${BROKEN_CONTRACT}: ${describeThrown(error)}`);
             this.#fail({ kind: 'protocol', detail: BROKEN_CONTRACT });
         } finally {
-            const rerun = succeeded && this.#rerunRequested;
+            // A failed poll reruns too: the user asked for a refresh, so the back-off must not
+            // swallow it. The rerun's own failure only reruns again if a new request arrived.
+            const rerun = this.#rerunRequested;
             this.#inFlight = undefined;
             this.#rerunRequested = false;
             if (rerun) void this.#poll();
