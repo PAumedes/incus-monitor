@@ -4,6 +4,7 @@ import {
     DASH,
     fill,
     formatCount,
+    formatList,
     formatPort,
     intlLocale,
     type Formatter,
@@ -272,7 +273,10 @@ function forwardsOf(
         const spokenMore = ctx.ngettext('{count} more', '{count} more', hidden);
         spoken.push(fill(spokenMore, { count }));
     }
-    return { forwards: lines.join(', '), forwardsSpoken: spoken.join(', ') };
+    return {
+        forwards: formatList(lines, ctx.locale),
+        forwardsSpoken: formatList(spoken, ctx.locale),
+    };
 }
 
 function accessibleName(instance: Instance, status: string, showProject: boolean, _: Translate) {
