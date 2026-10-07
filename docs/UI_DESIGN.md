@@ -86,8 +86,9 @@ Expanded row (`PopupSubMenuMenuItem`):
   lose key focus to whichever neighbour the Shell version picks (Open Shell on GNOME 46), so the row
   moves it to its header first and returns it to the same action once the row settles, unless the
   user moved it meanwhile. The copy button keeps its space (transparent and inert) when there is no address, so the details
-  block has the same height in every state and nothing moves under a resting pointer. Expansion
-  never moves key focus; Tab reaches the copy button, Open Shell
+  block has the same height in every state and nothing moves under a resting pointer. Copying the
+  address leaves the menu open, so several addresses can be copied in turn, and shows no
+  confirmation. Expansion never moves key focus; Tab reaches the copy button, Open Shell
   and the action buttons in turn. The header's grey while expanded is the theme's `:checked` state
   and stays.
 - **Panel**: the expanded block (details, Open Shell, actions) sits on one faint translucent grey
