@@ -17,7 +17,8 @@ export class GLibClock implements Clock {
     setTimeout(ms: number, callback: () => void): () => void {
         if (this.#disposed) return () => undefined;
         // Source IDs are reused once a source is gone, so liveness is tracked per timer rather
-        // than by looking the ID up: a stale cancel must never remove a newer timer.
+        // than by looking the ID up: a stale cancel must never remove a newer timer. The wrapper
+        // returns GLib.SOURCE_REMOVE so the source fires only once.
         const delay = clampDelayMs(ms);
         const timer: Timer = {
             live: true,
