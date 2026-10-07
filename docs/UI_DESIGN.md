@@ -126,7 +126,7 @@ Expanded row (`PopupSubMenuMenuItem`):
 - **Accessibility text**: a missing detail value ("—") is announced as a translated "Not
   available", and spoken download and upload text comes from a translated template. The
   instance type is shown by its icon only; the row's accessible name leaves it out.
-- **Failures** raise a single notification with the Incus message. Nothing modal. When the daemon answered with an error or timed out, it carries one "Show log" button that opens the instance's log in the terminal, and it stays in the message tray while it has the button. It is cleared when the next action on the same instance succeeds.
+- **Failures** raise a single notification with the Incus message. Nothing modal. When the daemon answered with an error or timed out, it carries one "Show Log" button that opens the instance's log in the terminal, and it stays in the message tray while it has the button. It is cleared when the next action on the same instance succeeds.
 - **Unexpected stops** raise one transient notification, without a button, titled "Instance not running" ("N instances not running" for several), when a running instance becomes `stopped` or `error` and no menu action on it is in flight. Several in one poll share one notification (three names, then "+N more"). It never replaces a failure notification, and the menu is unchanged. Both notifications come from "Incus Monitor" with the panel icon.
 - **No destructive actions** (delete, rebuild, snapshot restore) in the menu. Ever.
 

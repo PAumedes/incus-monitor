@@ -127,6 +127,6 @@ describe('launchFailure diagnostic', () => {
 
 describe('showLogLabel', () => {
     it('is the translated button label', () => {
-        expect(showLogLabel(translate)).toBe('[Show log]');
+        expect(showLogLabel(translate)).toBe('[Show Log]');
     });
 });
