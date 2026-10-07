@@ -9,9 +9,14 @@ export interface InstanceRef {
     readonly name: string;
 }
 
+export interface DiskUsage {
+    readonly usageBytes: number;
+    readonly totalBytes: number;
+}
+
 /**
- * `cpuAllocatedNsPerSecond` and `memoryTotalBytes` are 0 when Incus does not report them;
- * `processes` and `cpuUsageNs` are -1 when not available (a VM without an agent).
+ * `cpuAllocatedNsPerSecond`, `memoryTotalBytes` and `disk.totalBytes` are 0 when Incus does not
+ * report them; `processes` and `cpuUsageNs` are -1 when not available (a VM without an agent).
  * `primaryAddress` is the first global IPv4 address of a non-loopback interface, never IPv6.
  */
 export interface InstanceState {
@@ -19,6 +24,8 @@ export interface InstanceState {
     readonly cpuAllocatedNsPerSecond: number;
     readonly memoryUsageBytes: number;
     readonly memoryTotalBytes: number;
+    /** Null when the pool reports no root usage (`dir`) or Incus cannot measure it. */
+    readonly disk: DiskUsage | null;
     readonly rxBytes: number;
     readonly txBytes: number;
     readonly processes: number;

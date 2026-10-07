@@ -178,12 +178,26 @@ describe('structurallyEqual', () => {
     it('detects a changed nested detail', () => {
         const details = (up: string): Row['details'] => ({
             memory: '1 MB',
+            disk: null,
             network: { down: '0 B/s', up },
             address: '10.0.3.15',
             uptime: '1 min',
         });
         expect(
             structurallyEqual(row({ details: details('1') }), row({ details: details('2') })),
+        ).toBe(false);
+    });
+
+    it('detects a disk detail that appears', () => {
+        const details = (disk: string | null): Row['details'] => ({
+            memory: '1 MB',
+            disk,
+            network: { down: '0 B/s', up: '0 B/s' },
+            address: '10.0.3.15',
+            uptime: '1 min',
+        });
+        expect(
+            structurallyEqual(row({ details: details(null) }), row({ details: details('5 MB') })),
         ).toBe(false);
     });
 

@@ -19,6 +19,7 @@ const BASE_STATE: InstanceState = {
     processes: 204,
     startedAtMs: STARTED_AT_MS,
     primaryAddress: '10.0.3.15',
+    disk: null,
 };
 
 function running(

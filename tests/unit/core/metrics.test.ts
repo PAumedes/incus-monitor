@@ -19,6 +19,7 @@ function state(overrides: Partial<InstanceState> = {}): InstanceState {
         processes: 1,
         startedAtMs: STARTED,
         primaryAddress: null,
+        disk: null,
         ...overrides,
     };
 }

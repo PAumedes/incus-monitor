@@ -29,6 +29,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T18 | Private Launchpad PPA: GPG key, `dput` config, first `make ppa-source` uploads for noble and resolute        | T17        | todo   |
 | T19 | Move CI to the self-hosted GitLab runner (`.gitlab-ci.yml` is ready; set runner tags)                        | T00        | todo   |
 | T20 | B1: "Show log" action on the failure notification                                                            | T17        | review |
+| T21 | B2: Disk usage row in the expanded instance                                                                  | T20        | review |
 
 ## Acceptance criteria
 
@@ -243,6 +244,23 @@ Status: `todo` · `in-progress` · `review` · `done`
 - Manual: trigger a failure on a throwaway instance (stop a frozen one, see T16) on GNOME 46 and
   50 and check the button opens the log.
 
+### T21: Disk usage row (B2)
+
+- Fixtures first: record `instances-recursion2` from an instance on a Btrfs pool (with and without
+  a root quota) for Incus 6.0 (the desktop VM `imon-desktop-2404` has pool `imon-btrfs` with
+  `imon-btrfs-c1` and `imon-btrfs-quota`) and for 7.0 if an Incus 7.0 host is available; if it is
+  not, record 6.0 only and say so in the task report. Scrub like `scripts/record-fixtures.py`.
+- `core/incus/decode.ts` reads `state.disk.root` as `{usage, total}` into `InstanceState`
+  (absent, `{}` or a non-root-only map means "not reported"; a present value of the wrong type is a
+  `decode` error naming its path). Decoder tests run against both series' fixtures.
+- The expanded row shows one "Disk" row, like the existing memory row: "X of Y" when `total` is
+  above 0 and "X" when it is 0. The row is absent on pools that report nothing (`dir`).
+  The spoken form follows the existing readouts, and every string goes through gettext.
+- Icon, if any, only from [UI_DESIGN.md](UI_DESIGN.md#icons); keep the expanded row's layout and
+  the panel-with-separation styling intact. Row heights stay stable between polls.
+- [INCUS_API.md](INCUS_API.md) lists the field and the `dir` quirk it already records.
+- Manual: a Btrfs-backed instance in the VM on GNOME 46 and a `dir` instance on 50 (no row).
+
 ## After 1.0: backlog
 
 Ideas the maintainer wants kept, in rough priority order. None is scheduled. Before starting one,
@@ -273,3 +291,13 @@ icons only, a fixture recorded from a real Incus for every new field.
 - **B7: Stopped-unexpectedly notification.** Notify when a running instance leaves `running`
   without an action started from the menu.
 - **B8: Pinned favourites and a filter** for long lists.
+- **B9: Clear a stale failure notification.** When a later action on the same instance succeeds,
+  destroy the pending failure notification (one call to the notice's existing clear), so a
+  "Show log" button for an old failure does not linger in the tray.
+- **B10: Make the log view robust to the user's pager settings.** The log script runs `less`,
+  which honours `LESS` (`-F` closes the terminal on a short log) and fails if `less` is absent.
+  Neutralise `LESS` for the call and fall back to `${PAGER:-less}`; keep names positional.
+- **B11: Terminals that take one command string.** Targets spawn `prefix + argv`, which breaks
+  terminals configured with a single-string `-e` (such as `xfce4-terminal -e`). Either document
+  the supported settings in the Terminal preference or add a per-terminal join rule in
+  `core/terminal-command.ts`.

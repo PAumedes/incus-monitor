@@ -3,6 +3,7 @@ import type { IncusError } from '../errors.js';
 import { err, ok, type Result } from '../result.js';
 
 import type {
+    DiskUsage,
     Instance,
     InstanceState,
     InstanceStatus,
@@ -162,11 +163,35 @@ function decodeNetwork(state: Fields, path: string): Decoded<Network> {
     return ok({ rxBytes, txBytes, address: inet });
 }
 
+/** The root disk, or null when Incus reports none (`dir` pools) or cannot measure it (-1 on 7.0). */
+function decodeDisk(state: Fields, path: string): Decoded<DiskUsage | null> {
+    const disk = optionalRecord(state, 'disk', path);
+    if (!disk.ok) return disk;
+    const diskPath = `${path}.disk`;
+    // Absent means not reported. A present `root` or `usage` of the wrong type, null included, is a
+    // decode error; `disk` itself follows the file's null-as-absent convention.
+    const root = own(disk.value, 'root');
+    if (root === undefined) return ok(null);
+    const rootPath = `${diskPath}.root`;
+    if (!isRecord(root)) return fail(rootPath, 'expected an object');
+    const reported = own(root, 'usage');
+    if (reported === undefined) return ok(null);
+    if (reported === null) return fail(`${rootPath}.usage`, 'expected a finite number >= -1');
+    const usage = optionalNumber(root, 'usage', rootPath, { min: -1, fallback: -1 });
+    if (!usage.ok) return usage;
+    if (usage.value === -1) return ok(null);
+    const total = optionalNumber(root, 'total', rootPath, COUNTER);
+    if (!total.ok) return total;
+    return ok({ usageBytes: usage.value, totalBytes: total.value });
+}
+
 function decodeState(state: Fields, path: string): Decoded<InstanceState> {
     const cpu = sectionPair(state, 'cpu', path, ['usage', 'allocated_time'], CPU_USAGE);
     if (!cpu.ok) return cpu;
     const memory = sectionPair(state, 'memory', path, ['usage', 'total']);
     if (!memory.ok) return memory;
+    const disk = decodeDisk(state, path);
+    if (!disk.ok) return disk;
     const processes = optionalCount(state, 'processes', path);
     if (!processes.ok) return processes;
     const network = decodeNetwork(state, path);
@@ -178,6 +203,7 @@ function decodeState(state: Fields, path: string): Decoded<InstanceState> {
         cpuAllocatedNsPerSecond: cpu.value[1],
         memoryUsageBytes: memory.value[0],
         memoryTotalBytes: memory.value[1],
+        disk: disk.value,
         rxBytes: network.value.rxBytes,
         txBytes: network.value.txBytes,
         processes: processes.value,

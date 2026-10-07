@@ -29,6 +29,8 @@ const WEB01_STATE = {
     startedAtMs: STARTED_AT_MS,
     // The recorded web01 has only a global IPv6 address, which is not used as the primary one.
     primaryAddress: null,
+    // The recorded web01 sits on a `dir` pool, which reports `disk: {}`.
+    disk: null,
 };
 
 function decodeOne(raw: Json): Instance {
@@ -379,6 +381,7 @@ describe('decodeInstances: state', () => {
             processes: 0,
             startedAtMs: null,
             primaryAddress: null,
+            disk: null,
         });
     });
 
@@ -425,6 +428,7 @@ describe('decodeInstances: state', () => {
             processes: 10,
             startedAtMs: Date.parse('2026-10-06T03:31:18.305Z'),
             primaryAddress: '192.0.2.9',
+            disk: null,
         });
     });
 
@@ -443,6 +447,79 @@ describe('decodeInstances: state', () => {
 
     it('accepts a null disk section', () => {
         expect(stateOf(withState({ disk: null })).memoryUsageBytes).toBe(246_255_616);
+    });
+
+    describe('disk', () => {
+        it('reads the root disk usage and total', () => {
+            const raw = withState({ disk: { root: { usage: 52_920_320, total: 1_073_741_824 } } });
+            expect(stateOf(raw).disk).toStrictEqual({
+                usageBytes: 52_920_320,
+                totalBytes: 1_073_741_824,
+            });
+        });
+
+        it('reads a total of 0 when the root disk has no quota', () => {
+            const raw = withState({ disk: { root: { usage: 5, total: 0 } } });
+            expect(stateOf(raw).disk).toStrictEqual({ usageBytes: 5, totalBytes: 0 });
+        });
+
+        it('reads a total of 0 when the root disk omits it', () => {
+            expect(stateOf(withState({ disk: { root: { usage: 5 } } })).disk).toStrictEqual({
+                usageBytes: 5,
+                totalBytes: 0,
+            });
+        });
+
+        it.each<[string, unknown]>([
+            ['absent', undefined],
+            ['null', null],
+            ['an empty map (dir pool)', {}],
+            ['a map without a root entry', { data: { usage: 5, total: 0 } }],
+            ['a root entry that is an empty object', { root: {} }],
+            // Incus 7.0 reports -1 when it cannot measure the disk (recorded for stopped instances).
+            ['a usage of -1', { root: { usage: -1, total: 0 } }],
+        ])('treats a disk section that is %s as not reported', (_label, disk) => {
+            expect(stateOf(withState({ disk })).disk).toBeNull();
+        });
+
+        it.each<[string, unknown]>([
+            ['-1', -1],
+            ['a string', '1024'],
+            ['null', null],
+        ])('does not validate a total of %s next to the -1 usage sentinel', (_label, total) => {
+            const raw = withState({ disk: { root: { usage: -1, total } } });
+            expect(stateOf(raw).disk).toBeNull();
+        });
+
+        it('reads the root entry of a map that also lists other devices', () => {
+            const raw = withState({
+                disk: { data: { usage: 9, total: 9 }, root: { usage: 5, total: 7 } },
+            });
+            expect(stateOf(raw).disk).toStrictEqual({ usageBytes: 5, totalBytes: 7 });
+        });
+
+        it.each<[string, unknown, string]>([
+            ['disk is a string', 'big', 'metadata[0].state.disk'],
+            ['disk is an array', [], 'metadata[0].state.disk'],
+            ['root is a number', { root: 5 }, 'metadata[0].state.disk.root'],
+            ['root is null', { root: null }, 'metadata[0].state.disk.root'],
+            ['usage is a string', { root: { usage: '5' } }, 'metadata[0].state.disk.root.usage'],
+            ['usage is a boolean', { root: { usage: true } }, 'metadata[0].state.disk.root.usage'],
+            ['usage is below -1', { root: { usage: -2 } }, 'metadata[0].state.disk.root.usage'],
+            ['usage is NaN', { root: { usage: Number.NaN } }, 'metadata[0].state.disk.root.usage'],
+            [
+                'total is a string',
+                { root: { usage: 1, total: '9' } },
+                'metadata[0].state.disk.root.total',
+            ],
+            [
+                'total is negative',
+                { root: { usage: 1, total: -1 } },
+                'metadata[0].state.disk.root.total',
+            ],
+        ])('rejects state when %s', (_label, disk, path) => {
+            expect(decodeError([withState({ disk })])).toMatchObject({ kind: 'decode', path });
+        });
     });
 
     it.each<[string, Json, string]>([
@@ -745,5 +822,35 @@ describe('decodeInstances: hostile keys', () => {
         const snapshot = JSON.stringify(metadata);
         decodeInstances(metadata);
         expect(JSON.stringify(metadata)).toBe(snapshot);
+    });
+});
+
+describe('decodeInstances: recorded Btrfs fixture', () => {
+    const decoded = decodeInstances(readFixture('6.0', 'instances-recursion2-btrfs').metadata);
+    const disks = decoded.ok ? decoded.value.map(i => [i.name, i.state?.disk]) : [];
+
+    it('decodes both Btrfs instances', () => {
+        expect(decoded.ok).toBe(true);
+        expect(disks.map(([name]) => name)).toStrictEqual(['imon-btrfs-c1', 'imon-btrfs-quota']);
+    });
+
+    it('reads usage and a total of 0 for the instance without a quota', () => {
+        expect(disks[0]?.[1]).toStrictEqual({ usageBytes: 52_920_320, totalBytes: 0 });
+    });
+
+    it('reads the 1 GiB root quota as the total', () => {
+        expect(disks[1]?.[1]).toStrictEqual({ usageBytes: 491_520, totalBytes: 1_073_741_824 });
+    });
+});
+
+describe('decodeInstances: recorded 7.0 disk values', () => {
+    it('reports no disk for instances whose usage is the -1 sentinel', () => {
+        const result = decodeInstances(readFixture('7.0', 'instances-recursion2').metadata);
+        expect(result.ok && result.value.map(i => i.state?.disk)).toStrictEqual([
+            null,
+            null,
+            null,
+            null,
+        ]);
     });
 });
