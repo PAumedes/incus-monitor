@@ -12,7 +12,7 @@ function inst(name: string, status: InstanceStatus, project = 'default'): Instan
 const ready = (...instances: Instance[]): Snapshot => ({ kind: 'ready', instances, atMs: 0 });
 const refreshing = (...previous: Instance[]): Snapshot => ({ kind: 'refreshing', previous });
 const failed: Snapshot = { kind: 'failed', error: { kind: 'unreachable' }, retryInMs: 2000 };
-const NONE: ReadonlySet<string> = new Set();
+const NONE = (): boolean => false;
 const names = (found: readonly Instance[]): string[] => found.map(i => i.name);
 
 describe('ExitWatch', () => {
@@ -112,7 +112,7 @@ describe('ExitWatch', () => {
             watch.observe(ready(inst('a', 'running'), inst('b', 'running')), NONE);
             const found = watch.observe(
                 ready(inst('a', 'stopped'), inst('b', 'stopped')),
-                new Set([instanceKey(inst('a', 'running'))]),
+                key => key === instanceKey(inst('a', 'running')),
             );
             expect(names(found)).toEqual(['b']);
         });
@@ -121,7 +121,7 @@ describe('ExitWatch', () => {
             watch.observe(ready(inst('a', 'running')), NONE);
             watch.observe(
                 ready(inst('a', 'stopped')),
-                new Set([instanceKey(inst('a', 'running'))]),
+                key => key === instanceKey(inst('a', 'running')),
             );
             expect(watch.observe(ready(inst('a', 'stopped')), NONE)).toEqual([]);
         });
@@ -130,7 +130,7 @@ describe('ExitWatch', () => {
             watch.observe(ready(inst('a', 'stopped')), NONE);
             watch.observe(
                 ready(inst('a', 'running')),
-                new Set([instanceKey(inst('a', 'running'))]),
+                key => key === instanceKey(inst('a', 'running')),
             );
             watch.observe(ready(inst('a', 'running')), NONE);
             expect(names(watch.observe(ready(inst('a', 'stopped')), NONE))).toEqual(['a']);
@@ -140,7 +140,7 @@ describe('ExitWatch', () => {
             watch.observe(ready(inst('a', 'running', 'p2')), NONE);
             const found = watch.observe(
                 ready(inst('a', 'stopped', 'p2')),
-                new Set([instanceKey(inst('a', 'running', 'p1'))]),
+                key => key === instanceKey(inst('a', 'running', 'p1')),
             );
             expect(names(found)).toEqual(['a']);
         });

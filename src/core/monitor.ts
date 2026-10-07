@@ -143,6 +143,14 @@ export class Monitor {
         return run;
     }
 
+    /**
+     * True from the `perform` call until the refresh after the action has been published,
+     * including actions still queued behind another on the same instance.
+     */
+    isPerforming(key: string): boolean {
+        return this.#queues.has(key);
+    }
+
     dispose(): void {
         if (this.#disposed) return;
         this.#disposed = true;

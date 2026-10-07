@@ -42,8 +42,6 @@ interface Session {
     // A separate slot, so a stop never replaces a pending failure of an action.
     readonly stopNotice: ReplaceableNotice;
     readonly exitWatch: ExitWatch;
-    // Keys with a menu action in flight: their stops are expected and not reported.
-    readonly actionsInFlight: Set<string>;
     readonly unsubscribe: () => void;
     monitor: Monitor | undefined;
     // The last snapshot, so a presentation-only setting can redraw without a new request.
@@ -98,7 +96,6 @@ export default class IncusMonitorExtension extends Extension {
                 notice: new ReplaceableNotice(noticeSource),
                 stopNotice: new ReplaceableNotice(noticeSource),
                 exitWatch: new ExitWatch(),
-                actionsInFlight: new Set(),
                 unsubscribe,
                 monitor: undefined,
                 lastSnapshot: undefined,
@@ -162,7 +159,10 @@ export default class IncusMonitorExtension extends Extension {
     }
 
     #reportStops(session: Session, snapshot: Snapshot): void {
-        const stopped = session.exitWatch.observe(snapshot, session.actionsInFlight);
+        const stopped = session.exitWatch.observe(
+            snapshot,
+            key => session.monitor?.isPerforming(key) === true,
+        );
         if (stopped.length === 0) return;
         const { title, message } = stoppedNotice(stopped, _, ngettext, session.locale);
         session.stopNotice.show('stopped', title, message);
@@ -205,10 +205,7 @@ export default class IncusMonitorExtension extends Extension {
         const session = this.#session;
         const instance = this.#find(key);
         if (session?.monitor === undefined || instance === undefined) return;
-        session.actionsInFlight.add(key);
-        const result = await session.monitor.perform(action, instance).finally(() => {
-            session.actionsInFlight.delete(key);
-        });
+        const result = await session.monitor.perform(action, instance);
         // A disable and re-enable during the wait leaves a different session: say nothing then.
         if (this.#session !== session) return;
         if (result.ok) {
