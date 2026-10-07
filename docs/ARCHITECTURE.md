@@ -93,7 +93,7 @@ src/
     ├── indicator.ts        PanelMenu.Button: icon + optional running count.
     ├── clipboard.ts        St.Clipboard write (explicit user action only; needs St, so not an adapter).
     ├── instance-item.ts    One row per instance; expands into details and actions.
-    ├── replaceable-notice.ts One replaceable notification with an optional single button (failed action; stopped instances), filed under one shared "Incus Monitor" tray source; both destroyed in disable().
+    ├── replaceable-notice.ts One replaceable notification with an optional single button (failed action; stopped instances; terminal launch failure), filed under one shared "Incus Monitor" tray source; every notice and the source are destroyed in disable().
     ├── state-item.ts       Empty / error / unsupported states with a single actionable hint.
     └── footer.ts           Refresh and Preferences buttons.
 ```
@@ -120,7 +120,8 @@ update this file in the same merge request.
 4. User intents (start, stop, …) go to `Monitor.perform(action, instance)`. It issues
    `PUT …/state`, waits for the operation, refreshes, and returns a `Result`. On failure,
    `extension.ts` turns it into a notice (`failureNotice`) shown through `ReplaceableNotice`
-   (`ui/replaceable-notice.ts`).
+   (`ui/replaceable-notice.ts`). Unexpected stops and terminal launch failures each have their own
+   notice, so one does not replace another's button.
 5. `disable()` cancels in-flight I/O (`Gio.Cancellable`), removes every main-loop source,
    disconnects every signal, destroys the indicator, and drops all references.
 

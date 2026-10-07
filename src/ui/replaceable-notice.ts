@@ -39,9 +39,10 @@ export class NoticeSource {
 
 /**
  * One notification at a time with at most one action button; a newer one replaces the older.
- * It is used for failed actions and for unexpected stops. It does not use `notifyError`, which
- * also writes the daemon's text to the journal. With a button the notification is not transient,
- * so it stays in the message tray and the button remains reachable after the banner hides.
+ * It is used for failed actions, unexpected stops and terminal launch failures. It does not use
+ * `notifyError`, which also writes the daemon's text to the journal. With a button the
+ * notification is not transient, so it stays in the message tray and the button remains reachable
+ * after the banner hides.
  */
 export class ReplaceableNotice {
     readonly #sources: NoticeSource;
