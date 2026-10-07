@@ -968,6 +968,20 @@ describe('present: forwards line', () => {
         );
     });
 
+    it('joins the forwards with the locale list separator', () => {
+        const items = [forward(1, 1), forward(2, 2), forward(3, 3)];
+        const row = onlyRow(instance({ forwards: items }), { locale: 'ar' });
+        expect(row.forwards).toContain(' و');
+        expect(row.forwards).not.toContain(', ');
+        expect(row.forwardsSpoken).toContain(' و');
+        expect(row.forwardsSpoken).not.toContain(', ');
+    });
+
+    it('separates the forwards in Chinese', () => {
+        const items = [forward(1, 1), forward(2, 2)];
+        expect(forwardsOf(items, { locale: 'zh' })).toBe('tcp 1 → 1、tcp 2 → 2');
+    });
+
     it('formats the hidden count with the locale digits', () => {
         const items = [1, 2, 3, 4, 5].map(() => forward(1, 1));
         expect(forwardsOf(items, { locale: 'ar-EG' })).toMatch(/many:\+٢ more$/);
@@ -1064,7 +1078,7 @@ describe('present: forwards line', () => {
         it('uses locale digits for ports and the remainder', () => {
             const items = [1, 2, 3, 4, 5].map(n => forward(8000 + n, 80));
             expect(spoken(items, { locale: 'ar-EG' })).toMatch(
-                /^one:TCP port ٨٠٠١ forwarded to ٨٠,.*, many:٢ more$/,
+                /^one:TCP port ٨٠٠١ forwarded to ٨٠ وone:.* وmany:٢ more$/,
             );
         });
 

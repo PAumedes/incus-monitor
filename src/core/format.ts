@@ -34,6 +34,21 @@ export function formatCount(value: number, locale: string): string {
     return new Intl.NumberFormat(intlLocale(locale)).format(value);
 }
 
+const listFormats = new Map<string, Intl.ListFormat>();
+
+/**
+ * Joins items with the locale's list separator. The conjunction type is used because 'unit' runs zh
+ * items together and separates ja ones with a space only; narrow keeps English at "a, b, c".
+ */
+export function formatList(items: readonly string[], locale: string): string {
+    let format = listFormats.get(locale);
+    if (format === undefined) {
+        format = new Intl.ListFormat(intlLocale(locale), { type: 'conjunction', style: 'narrow' });
+        listFormats.set(locale, format);
+    }
+    return format.format(items);
+}
+
 /** A port number in the user's digits; a separator would read as two numbers, so none is used. */
 export function formatPort(port: number, locale: string): string {
     return new Intl.NumberFormat(intlLocale(locale), { useGrouping: false }).format(port);
