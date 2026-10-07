@@ -39,11 +39,6 @@ export function cpuPercent(previous: Sample | undefined, current: Sample): numbe
     return clampPercent((usedNs / (seconds * allocated)) * 100);
 }
 
-export function memoryPercent(state: InstanceState): number | null {
-    if (state.memoryTotalBytes <= 0) return null;
-    return clampPercent((state.memoryUsageBytes / state.memoryTotalBytes) * 100);
-}
-
 export function networkRates(previous: Sample | undefined, current: Sample): NetworkRates | null {
     if (previous === undefined) return null;
     const seconds = comparableSeconds(previous, current);
