@@ -19,6 +19,7 @@ describe('menuText', () => {
         const { headings } = menuText(translate);
         expect(headings).toEqual({
             memory: '[Memory]',
+            disk: '[Disk]',
             network: '[Network]',
             address: '[Address]',
             uptime: '[Uptime]',

@@ -36,6 +36,7 @@ Expanded row (`PopupSubMenuMenuItem`):
 ```text
 │ ● web01                                     ⌄│
 │     Memory     220 MB of 2 GB                │
+│     Disk       50 MB of 1 GB                 │
 │     Network    ↓ 12 kB/s  ↑ 1 kB/s           │
 │     Address    10.0.3.15                  ⧉  │
 │     Uptime     3 h 12 min                    │
@@ -45,6 +46,9 @@ Expanded row (`PopupSubMenuMenuItem`):
 │     [■ Stop]   [↻ Restart]   [⏸ Freeze]       │
 ```
 
+- The Disk row is omitted when the pool reports no usage (`dir`); it reads "X of Y" with a quota
+  and "X" without; without a quota it shows the instance's root-volume usage, not pool capacity.
+  It is an inert item like the others, so hiding it cannot move key focus.
 - A `PopupSeparatorMenuItem` sets the actions (Open Shell and the buttons) apart from the
   details. It is shown only when the details and at least one action are, and is destroyed with
   the row. A second one sets the buttons apart from Open Shell, shown only when both are. The

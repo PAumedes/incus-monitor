@@ -39,6 +39,8 @@ export type DotClass = 'running' | 'frozen' | 'stopped' | 'error';
 
 export interface RowDetails {
     readonly memory: string;
+    /** Null when the instance's pool reports no disk usage. */
+    readonly disk: string | null;
     readonly network: { readonly down: string; readonly up: string };
     readonly address: string;
     readonly uptime: string;
@@ -166,11 +168,11 @@ function actionsOf(instance: Instance, _: Translate): RowAction[] {
     return actions;
 }
 
-function memoryText(used: number, total: number, ctx: PresentContext): string {
+function sizeText(used: number, total: number, ctx: PresentContext): string {
     const usedText = ctx.formatter.bytes(used);
     if (total <= 0) return usedText;
     const _ = ctx.translate;
-    // Translators: {used} and {total} are memory sizes such as "246 MB" and "2.0 GB".
+    // Translators: {used} and {total} are sizes such as "246 MB" and "2.0 GB".
     const template = _('{used} of {total}');
     return fill(template, { used: usedText, total: ctx.formatter.bytes(total) });
 }
@@ -181,7 +183,11 @@ function detailsOf(instance: Instance, rates: LiveRates, ctx: PresentContext): R
     const { formatter } = ctx;
     const uptimeMs = state.startedAtMs === null ? -1 : ctx.wallNowMs - state.startedAtMs;
     return {
-        memory: memoryText(state.memoryUsageBytes, state.memoryTotalBytes, ctx),
+        memory: sizeText(state.memoryUsageBytes, state.memoryTotalBytes, ctx),
+        disk:
+            state.disk === null
+                ? null
+                : sizeText(state.disk.usageBytes, state.disk.totalBytes, ctx),
         network: rates.network
             ? {
                   down: formatter.rate(rates.network.rxBytesPerSecond),

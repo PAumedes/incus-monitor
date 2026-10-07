@@ -5,6 +5,7 @@ import type { LaunchError } from './launch.js';
 export interface MenuText {
     readonly headings: {
         readonly memory: string;
+        readonly disk: string;
         readonly network: string;
         readonly address: string;
         readonly uptime: string;
@@ -22,6 +23,7 @@ export function menuText(_: Translate): MenuText {
     return {
         headings: {
             memory: _('Memory'),
+            disk: _('Disk'),
             network: _('Network'),
             address: _('Address'),
             uptime: _('Uptime'),

@@ -103,17 +103,18 @@ explicitly on per-instance calls.
 
 ## Fields we read
 
-| Field                                 | Use                                                                                   |
-| ------------------------------------- | ------------------------------------------------------------------------------------- |
-| `name`, `project`, `type`             | Identity, icon                                                                        |
-| `status_code`                         | State (authoritative). `status` is display-only and localisation-prone.               |
-| `state.cpu.usage` (ns, cumulative)    | CPU %: Δusage / (Δt × allocated_time) × 100                                           |
-| `state.cpu.allocated_time` (ns per s) | Number of allocated CPUs × 1e9. Requires `instance_state_cpu_time`. 0 = not reported. |
-| `state.memory.usage`, `.total`        | Memory readout; `total` is the limit or the host total (0 = not reported)             |
-| `state.network.<iface>.counters`      | Rx/Tx rates; skip `loopback` type                                                     |
-| `state.network.<iface>.addresses[]`   | Primary address: first `global` IPv4 (IPv6 is not used)                               |
-| `state.processes`                     | `-1` on a VM means no agent → "Open Console"; absent is treated as `-1`               |
-| `state.started_at`                    | Uptime                                                                                |
+| Field                                 | Use                                                                                                         |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `name`, `project`, `type`             | Identity, icon                                                                                              |
+| `status_code`                         | State (authoritative). `status` is display-only and localisation-prone.                                     |
+| `state.cpu.usage` (ns, cumulative)    | CPU %: Δusage / (Δt × allocated_time) × 100                                                                 |
+| `state.cpu.allocated_time` (ns per s) | Number of allocated CPUs × 1e9. Requires `instance_state_cpu_time`. 0 = not reported.                       |
+| `state.memory.usage`, `.total`        | Memory readout; `total` is the limit or the host total (0 = not reported)                                   |
+| `state.disk.root.usage`, `.total`     | Disk row; `total` 0 = no quota. `{}` on `dir` pools and `usage` `-1` on Incus 7.0 (cannot measure) = no row |
+| `state.network.<iface>.counters`      | Rx/Tx rates; skip `loopback` type                                                                           |
+| `state.network.<iface>.addresses[]`   | Primary address: first `global` IPv4 (IPv6 is not used)                                                     |
+| `state.processes`                     | `-1` on a VM means no agent → "Open Console"; absent is treated as `-1`                                     |
+| `state.started_at`                    | Uptime                                                                                                      |
 
 Status mapping (`core/incus/decode.ts`): `103` Running and `113` Ready → running; `102` →
 stopped; `110` → frozen; `112` → error; `101`, `104`–`109` and `111` (Thawed, only seen briefly
@@ -152,7 +153,8 @@ for project \"default\""` (fixture `6.0/error-forbidden-project.json`). Always u
   (`7.0/error-forbidden-project.json`), so an empty `default` project is not proof of an error.
 - `state.cpu.usage` is `-1` (not available) on a VM without a running incus-agent (seen on Incus
   6.0.5). Decode it as valid and show no CPU percentage.
-- `state.disk` is `{}` on the `dir` storage driver. Treat disk usage as optional.
+- `state.disk` is `{}` on the `dir` storage driver. Treat disk usage as optional. Only the device
+  named `root` is read, so an instance whose root device has another name gets no Disk row.
 - `memory.usage_peak` and `swap_usage_peak` are `0` on cgroup v2 hosts. Do not display them.
 - `started_at` is RFC 3339 with nanoseconds and a numeric offset. `Date.parse` truncates to
   milliseconds, which is fine.

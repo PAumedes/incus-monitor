@@ -95,6 +95,8 @@ export class InstanceItem {
     readonly #secondCell = cell(this.#second, 'incus-monitor-memory');
     readonly #detailItems: PopupMenu.PopupBaseMenuItem[] = [];
     readonly #memory = label('incus-monitor-tabular');
+    readonly #disk = label('incus-monitor-tabular');
+    readonly #diskItem: PopupMenu.PopupBaseMenuItem;
     readonly #down = label('incus-monitor-tabular incus-monitor-rate');
     readonly #up = label('incus-monitor-tabular');
     readonly #address = label('incus-monitor-tabular incus-monitor-address');
@@ -130,7 +132,7 @@ export class InstanceItem {
         this.#buildHeader();
         releaseFocusOnLeave(this.item, deps.home);
         releaseFocusOnLeave(this.#terminal, deps.home);
-        this.#buildDetails();
+        this.#diskItem = this.#buildDetails();
         this.#buildActions();
         this.#dot.connect('notify::mapped', () => {
             if (!this.#destroyed) this.#syncPulse();
@@ -189,7 +191,7 @@ export class InstanceItem {
         item.insert_child_below(this.#cpuCell, this.#secondCell);
     }
 
-    #detailRow(heading: string, ...values: St.Widget[]): void {
+    #detailRow(heading: string, ...values: St.Widget[]): PopupMenu.PopupBaseMenuItem {
         const row = inertItem();
         const headingLabel = dimLabel('incus-monitor-heading');
         headingLabel.text = heading;
@@ -197,11 +199,13 @@ export class InstanceItem {
         for (const value of values) row.add_child(value);
         this.#detailItems.push(row);
         this.item.menu.addMenuItem(row);
+        return row;
     }
 
-    #buildDetails(): void {
+    #buildDetails(): PopupMenu.PopupBaseMenuItem {
         const { headings } = this.#deps.text;
         this.#detailRow(headings.memory, this.#memory);
+        const diskItem = this.#detailRow(headings.disk, this.#disk);
         const network = new St.BoxLayout();
         network.add_child(this.#down);
         network.add_child(this.#up);
@@ -215,6 +219,7 @@ export class InstanceItem {
         address.add_child(this.#copy);
         this.#detailRow(headings.address, address);
         this.#detailRow(headings.uptime, this.#uptime);
+        return diskItem;
     }
 
     #buildActions(): void {
@@ -256,6 +261,9 @@ export class InstanceItem {
         for (const entry of this.#detailItems) entry.visible = details !== null;
         if (details === null) return;
         setSpoken(this.#memory, details.memory);
+        // The details panel is built from inert items, so hiding one cannot move key focus.
+        this.#diskItem.visible = details.disk !== null;
+        if (details.disk !== null) setSpoken(this.#disk, details.disk);
         // The arrows are glyphs; the spoken text comes from the translated template.
         this.#down.text = `↓ ${details.network.down}`;
         this.#down.accessible_name = spokenRate('down', details.network.down, _);

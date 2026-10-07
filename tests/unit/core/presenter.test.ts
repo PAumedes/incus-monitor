@@ -48,6 +48,7 @@ const RUNNING_STATE: InstanceState = {
     processes: 204,
     startedAtMs: STARTED_AT_MS,
     primaryAddress: '10.0.3.15',
+    disk: null,
 };
 
 function instance(overrides: Partial<Instance> = {}): Instance {
@@ -415,6 +416,57 @@ describe('present: actions', () => {
         expect(onlyRow(instance({ status: 'busy', state: null })).busy).toBe(true);
         expect(onlyRow(instance({ status: 'running' })).busy).toBe(false);
         expect(onlyRow(instance({ status: 'stopped', state: null })).busy).toBe(false);
+    });
+});
+
+describe('present: disk detail', () => {
+    const disk = (usageBytes: number, totalBytes: number) => ({ disk: { usageBytes, totalBytes } });
+
+    it('shows disk as used of total when a quota is set', () => {
+        const row = onlyRow(withState(disk(491_520, 1_073_741_824)));
+        expect(row.details?.disk).toBe(`[${nb('492 kB')} of ${nb('1.1 GB')}]`);
+    });
+
+    it('shows only the used disk when there is no quota', () => {
+        const row = onlyRow(withState(disk(52_920_320, 0)));
+        expect(row.details?.disk).toBe(nb('53 MB'));
+    });
+
+    it('shows zero used disk rather than hiding the row', () => {
+        expect(onlyRow(withState(disk(0, 0))).details?.disk).toBe(nb('0 B'));
+    });
+
+    it('has no disk detail when the pool reports none', () => {
+        expect(onlyRow(withState({ disk: null })).details?.disk).toBeNull();
+    });
+
+    it('keeps the other details when the disk is not reported', () => {
+        expect(onlyRow(withState({ disk: null })).details?.memory).toBe(
+            `[${nb('246 MB')} of ${nb('2.0 GB')}]`,
+        );
+    });
+
+    it('passes the "of" template through gettext', () => {
+        const row = onlyRow(withState(disk(1, 2)), {
+            translate: m => (m === '{used} of {total}' ? '{used} de {total}' : m),
+        });
+        expect(row.details?.disk).toBe(`${nb('1 B')} de ${nb('2 B')}`);
+    });
+
+    it('keeps the disk row present across polls while the value changes', () => {
+        const first = onlyRow(withState(disk(100, 0))).details;
+        const second = onlyRow(withState(disk(200, 1_000))).details;
+        expect([first?.disk === null, second?.disk === null]).toEqual([false, false]);
+    });
+
+    it('does not change the disk detail when only another metric changes', () => {
+        const a = onlyRow(withState({ ...disk(100, 0), processes: 1 })).details?.disk;
+        const b = onlyRow(withState({ ...disk(100, 0), processes: 9 })).details?.disk;
+        expect(a).toBe(b);
+    });
+
+    it('has no details at all for a stopped instance, disk included', () => {
+        expect(onlyRow(withState(disk(1, 0), { status: 'stopped' })).details).toBeNull();
     });
 });
 
