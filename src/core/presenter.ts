@@ -71,6 +71,8 @@ export type ViewModel =
           readonly kind: 'list';
           readonly rows: readonly Row[];
           readonly runningCount: number;
+          /** Null for a single instance: "1 of 1 running" says nothing. */
+          readonly summary: string | null;
       } & PanelState)
     | ({
           readonly kind: 'notice';
@@ -322,6 +324,22 @@ function runningPanelName(runningCount: number, ctx: PresentContext): string {
     return fill(template, { count: formatCount(runningCount, ctx.locale) });
 }
 
+function summaryOf(runningCount: number, total: number, ctx: PresentContext): string | null {
+    if (total === 1) return null;
+    const { ngettext } = ctx;
+    // Translators: {running} and {total} are instance counts, as in "2 of 5 running". Both forms
+    // are identical on purpose: the numbers are placeholders.
+    const template = ngettext(
+        '{running} of {total} running',
+        '{running} of {total} running',
+        total,
+    );
+    return fill(template, {
+        running: formatCount(runningCount, ctx.locale),
+        total: formatCount(total, ctx.locale),
+    });
+}
+
 function listOf(instances: readonly Instance[], ctx: PresentContext): ViewModel {
     const _ = ctx.translate;
     if (instances.length === 0) return notice(_('No instances'), null, ctx);
@@ -335,6 +353,7 @@ function listOf(instances: readonly Instance[], ctx: PresentContext): ViewModel 
         kind: 'list',
         rows: visible.map(i => rowOf(i, showProject, ctx)),
         runningCount,
+        summary: summaryOf(runningCount, instances.length, ctx),
         panelIcon: PANEL_ICON,
         panelAccessibleName: runningPanelName(runningCount, ctx),
     };
