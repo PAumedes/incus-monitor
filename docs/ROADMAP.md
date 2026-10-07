@@ -31,6 +31,7 @@ Status: `todo` · `in-progress` · `review` · `done`
 | T20 | B1: "Show log" action on the failure notification                                                            | T17        | review |
 | T21 | B2: Disk usage row in the expanded instance                                                                  | T20        | review |
 | T22 | B9–B11: stale failure notice, pager robustness, terminal prefix rules                                        | T21        | review |
+| T23 | B5: "5 of 7 running" summary line at the top of the menu                                                     | T22        | review |
 
 ## Acceptance criteria
 
@@ -275,6 +276,22 @@ Status: `todo` · `in-progress` · `review` · `done`
   `docs/UI_DESIGN.md` and the preference text say so, with working examples, and name the
   terminals that take one command string (`xfce4-terminal -e`, `mate-terminal -e`) as unsupported.
   No join rule exists in `core/terminal-command.ts`.
+
+### T23: Summary line in the menu (B5)
+
+- The list view model carries `summary: string | null`: "{running} of {total} running", where
+  `total` counts every instance Incus returned (also the stopped ones hidden by the
+  show-stopped setting) and `running` is the same count as the panel's. `null` when there is
+  only one instance, because "1 of 1 running" says nothing. The text uses `ngettext` on `total`
+  with a translator comment, and numbers go through `formatCount`.
+- The `ui/` shows it as one inert line above the instance list, outside the reordered section
+  (the row reorder code must not see it), visible only in the list view. It is not focusable,
+  adds no icon and no new style beyond the existing notice/label styling, and its height does not
+  jump between polls with an unchanged summary (the label is updated only when the text changes).
+- The panel keeps its single number and its accessible name. The line is readable by a screen
+  reader as it is.
+- Strings in `po/` regenerated; `es` translated. [UI_DESIGN.md](UI_DESIGN.md) describes the line.
+- Manual: 1 instance (no line), several with some stopped, the show-stopped setting off.
 
 ## After 1.0: backlog
 

@@ -31,6 +31,11 @@ Follow the [GNOME HIG](https://developer.gnome.org/hig/) for wording and capital
 └──────────────────────────────────────────────┘
 ```
 
+Above the rows, when Incus returns two or more instances, one inert line reads "2 of 5 running". The total counts every
+instance, including the stopped ones hidden by the show-stopped setting; the number is the panel's. It is not
+focusable, has no icon, reuses the notice label style, and is hidden for a single instance, a notice and the
+first load. Its text is assigned only when it changes.
+
 Expanded row (`PopupSubMenuMenuItem`):
 
 ```text

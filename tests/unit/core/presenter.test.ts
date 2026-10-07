@@ -579,6 +579,74 @@ describe('present: panel', () => {
     });
 });
 
+describe('present: summary line', () => {
+    const stopped = (name: string) => instance({ name, status: 'stopped', state: null });
+
+    it('says how many of all instances are running, through ngettext', () => {
+        const vm = listOf(ready(instance({ name: 'a' }), instance({ name: 'b' }), stopped('c')));
+        expect(vm.summary).toBe('many:2 of 3 running');
+    });
+
+    it('counts the stopped instances hidden by the show-stopped setting in the total', () => {
+        const vm = listOf(ready(instance({ name: 'a' }), stopped('b'), stopped('c')), {
+            showStopped: false,
+        });
+        expect(vm.rows).toHaveLength(1);
+        expect(vm.summary).toBe('many:1 of 3 running');
+    });
+
+    it('is the same with the stopped instances shown or hidden', () => {
+        const items = [instance({ name: 'a' }), stopped('b')];
+        expect(listOf(ready(...items), { showStopped: true }).summary).toBe(
+            listOf(ready(...items), { showStopped: false }).summary,
+        );
+    });
+
+    it('is null for a single instance, running or not', () => {
+        expect(listOf(ready(instance())).summary).toBeNull();
+        expect(listOf(ready(stopped('a'))).summary).toBeNull();
+    });
+
+    it('is shown for two instances, the smallest case with a summary', () => {
+        expect(listOf(ready(stopped('a'), stopped('b'))).summary).toBe('many:0 of 2 running');
+    });
+
+    it('uses the same running count as the panel', () => {
+        const vm = listOf(
+            ready(instance({ name: 'a' }), instance({ name: 'b', status: 'frozen' }), stopped('c')),
+        );
+        expect(vm.summary).toBe(`many:${String(vm.runningCount)} of 3 running`);
+    });
+
+    it('formats both numbers with the locale digits', () => {
+        const vm = listOf(ready(instance({ name: 'a' }), stopped('b'), stopped('c')), {
+            locale: 'ar-EG',
+        });
+        expect(vm.summary).toBe('many:\u0661 of \u0663 running');
+    });
+
+    it('picks the plural form from the total, not the running count', () => {
+        const calls: number[] = [];
+        const spy = (singular: string, plural: string, n: number): string => {
+            calls.push(n);
+            return ngettext(singular, plural, n);
+        };
+        listOf(ready(instance({ name: 'a' }), stopped('b'), stopped('c')), { ngettext: spy });
+        expect(calls).toContain(3);
+    });
+
+    it('is computed from the previous instances of a refreshing snapshot', () => {
+        const items = [instance({ name: 'a' }), stopped('b')];
+        const vm = listOf({ kind: 'refreshing', previous: items });
+        expect(vm.summary).toBe('many:1 of 2 running');
+    });
+
+    it('has no summary on a notice or while loading', () => {
+        expect(present({ kind: 'idle' }, context())).not.toHaveProperty('summary');
+        expect(present(ready(), context())).not.toHaveProperty('summary');
+    });
+});
+
 describe('present: notices and neutral states', () => {
     const failed = (error: IncusError): Snapshot => ({ kind: 'failed', error, retryInMs: 2000 });
 

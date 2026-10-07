@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -46,6 +47,15 @@ export class Indicator {
     readonly #state = new MenuState();
     readonly #icon = new St.Icon({ style_class: 'system-status-icon' });
     readonly #count = new St.Label({ y_align: Clutter.ActorAlign.CENTER });
+    readonly #summary = new PopupMenu.PopupBaseMenuItem({
+        reactive: false,
+        can_focus: false,
+    });
+    readonly #summaryLabel = new St.Label({
+        x_expand: true,
+        y_align: Clutter.ActorAlign.CENTER,
+        style_class: 'incus-monitor-notice',
+    });
     readonly #body = new PopupMenu.PopupMenuSection();
     readonly #items = new Map<string, InstanceItem>();
     #notice: StateItem | undefined;
@@ -74,6 +84,12 @@ export class Indicator {
                 deps.openPreferences();
             },
         );
+        // The sentence must stay whole: long translations wrap instead of being cut off.
+        this.#summaryLabel.clutter_text.line_wrap = true;
+        this.#summaryLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
+        this.#summary.visible = false;
+        this.#summary.add_child(this.#summaryLabel);
+        menu.addMenuItem(this.#summary);
         menu.addMenuItem(this.#body);
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         menu.addMenuItem(footer.item);
@@ -107,6 +123,7 @@ export class Indicator {
         // A notice or loading view says nothing about rows, so it must not forget their state.
         const keys = listKeys(vm);
         if (keys !== undefined) this.#state.reconcile(keys);
+        this.#drawSummary(vm.kind === 'list' ? vm.summary : null);
         switch (vm.kind) {
             case 'list':
                 this.#dropNotice();
@@ -120,6 +137,13 @@ export class Indicator {
                 this.#dropNotice();
                 this.#drawRows([]);
                 break;
+        }
+    }
+
+    #drawSummary(summary: string | null): void {
+        this.#summary.visible = summary !== null;
+        if (summary !== null && this.#summaryLabel.text !== summary) {
+            this.#summaryLabel.text = summary;
         }
     }
 

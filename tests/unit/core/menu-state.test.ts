@@ -31,10 +31,11 @@ function row(overrides: Partial<Row> = {}): Row {
     };
 }
 
-const list = (...rows: Row[]): ViewModel => ({
+const list = (...rows: Row[]): Extract<ViewModel, { kind: 'list' }> => ({
     kind: 'list',
     rows,
     runningCount: rows.length,
+    summary: null,
     ...PANEL,
 });
 const loading: ViewModel = { kind: 'loading', ...PANEL };
@@ -203,6 +204,26 @@ describe('structurallyEqual', () => {
 
     it('is not fooled by arrays of different length', () => {
         expect(structurallyEqual([1, 2], [1, 2, 3])).toBe(false);
+    });
+});
+
+describe('structurallyEqual on list view models', () => {
+    const withSummary = (summary: string | null): ViewModel => ({ ...list(row()), summary });
+
+    it('sees a changed summary', () => {
+        expect(
+            structurallyEqual(withSummary('1 of 2 running'), withSummary('2 of 2 running')),
+        ).toBe(false);
+    });
+
+    it('sees a summary appearing or disappearing', () => {
+        expect(structurallyEqual(withSummary(null), withSummary('1 of 2 running'))).toBe(false);
+    });
+
+    it('treats equal summaries as equal', () => {
+        expect(
+            structurallyEqual(withSummary('1 of 2 running'), withSummary('1 of 2 running')),
+        ).toBe(true);
     });
 });
 
