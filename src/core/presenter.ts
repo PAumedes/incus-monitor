@@ -20,6 +20,7 @@ import {
     type InstanceType,
 } from './incus/models.js';
 import { userMessage } from './incus/validate.js';
+import type { LaunchTarget } from './launch.js';
 import type { Snapshot } from './monitor.js';
 import type { LiveRates } from './sampler.js';
 
@@ -34,7 +35,8 @@ export interface PresentContext {
     readonly showStopped: boolean;
 }
 
-export type TerminalTarget = 'shell' | 'console';
+/** The row's terminal buttons; the log target opens from a failure notification instead. */
+export type TerminalTarget = Exclude<LaunchTarget['kind'], 'log'>;
 
 export type RowAction =
     | {
