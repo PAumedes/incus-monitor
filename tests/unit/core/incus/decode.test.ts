@@ -187,6 +187,7 @@ describe('decodeInstances: recorded fixtures', () => {
                     type: 'container',
                     status: 'running',
                     state: null,
+                    forwards: [],
                 },
             ],
         });
@@ -202,6 +203,7 @@ describe('decodeInstances: recorded fixtures', () => {
                     type: 'container',
                     status: 'running',
                     state: WEB01_STATE,
+                    forwards: [],
                 },
             ],
         });
@@ -812,6 +814,7 @@ describe('decodeInstances: hostile keys', () => {
                     type: 'container',
                     status: 'running',
                     state: { ...WEB01_STATE, rxBytes: 20518, txBytes: 771 },
+                    forwards: [],
                 },
             ],
         });
@@ -851,6 +854,256 @@ describe('decodeInstances: recorded 7.0 disk values', () => {
             null,
             null,
             null,
+        ]);
+    });
+});
+
+describe('decodeInstances: port forwards', () => {
+    const proxy = (listen: unknown, connect: unknown, extra: Json = {}): Json => ({
+        type: 'proxy',
+        listen,
+        connect,
+        ...extra,
+    });
+    const forwardsOf = (devices: unknown): Instance['forwards'] =>
+        decodeOne(instanceJson({ expanded_devices: devices })).forwards;
+    const single = (port: number) => ({ first: port, last: port });
+
+    it('is empty for the recorded instance, which has no proxy device', () => {
+        expect(decodeOne(instanceJson()).forwards).toStrictEqual([]);
+    });
+
+    it('is empty when expanded_devices is absent', () => {
+        expect(decodeOne(instanceJson({ expanded_devices: undefined })).forwards).toStrictEqual([]);
+    });
+
+    it('decodes a single tcp forward', () => {
+        expect(forwardsOf({ web: proxy('tcp:127.0.0.1:18080', 'tcp:127.0.0.1:80') })).toStrictEqual(
+            [{ protocol: 'tcp', listen: single(18080), connect: single(80) }],
+        );
+    });
+
+    it('decodes a udp forward', () => {
+        expect(forwardsOf({ dns: proxy('udp:0.0.0.0:5353', 'udp:127.0.0.1:53') })).toStrictEqual([
+            { protocol: 'udp', listen: single(5353), connect: single(53) },
+        ]);
+    });
+
+    it('decodes port ranges', () => {
+        expect(
+            forwardsOf({ rng: proxy('tcp:0.0.0.0:8000-8002', 'tcp:127.0.0.1:9000-9002') }),
+        ).toStrictEqual([
+            {
+                protocol: 'tcp',
+                listen: { first: 8000, last: 8002 },
+                connect: { first: 9000, last: 9002 },
+            },
+        ]);
+    });
+
+    it('accepts a bracketed IPv6 host', () => {
+        expect(forwardsOf({ v6: proxy('tcp:[::1]:8080', 'tcp:[::1]:80') })).toHaveLength(1);
+    });
+
+    it('sorts by device key in code-unit order whatever the order the daemon lists them in', () => {
+        const forwards = forwardsOf({
+            zeta: proxy('tcp:0.0.0.0:3', 'tcp:127.0.0.1:3'),
+            alpha: proxy('tcp:0.0.0.0:1', 'tcp:127.0.0.1:1'),
+            mid: proxy('tcp:0.0.0.0:2', 'tcp:127.0.0.1:2'),
+        });
+        expect(forwards.map(f => f.listen.first)).toStrictEqual([1, 2, 3]);
+    });
+
+    it('ignores devices that are not proxies', () => {
+        const forwards = forwardsOf({
+            root: { type: 'disk', path: '/', pool: 'default' },
+            eth0: { type: 'nic', network: 'incusbr0' },
+            fake: { type: 'disk', listen: 'tcp:0.0.0.0:1', connect: 'tcp:127.0.0.1:1' },
+            web: proxy('tcp:0.0.0.0:80', 'tcp:127.0.0.1:80'),
+        });
+        expect(forwards.map(f => f.listen.first)).toStrictEqual([80]);
+    });
+
+    it.each<[string, unknown, unknown]>([
+        ['a unix listener', 'unix:/tmp/a.sock', 'tcp:127.0.0.1:81'],
+        ['a unix target', 'tcp:0.0.0.0:80', 'unix:/tmp/a.sock'],
+        ['an abstract unix listener', 'unix:@name', 'tcp:127.0.0.1:81'],
+        ['another protocol', 'sctp:0.0.0.0:80', 'tcp:127.0.0.1:80'],
+        ['mixed protocols', 'tcp:0.0.0.0:80', 'udp:127.0.0.1:80'],
+        ['no protocol', '0.0.0.0:80', '127.0.0.1:80'],
+        ['an upper case protocol', 'TCP:0.0.0.0:80', 'TCP:127.0.0.1:80'],
+        ['a missing port', 'tcp:0.0.0.0', 'tcp:127.0.0.1:80'],
+        ['an empty host', 'tcp::80', 'tcp:127.0.0.1:80'],
+        ['port 0', 'tcp:0.0.0.0:0', 'tcp:127.0.0.1:80'],
+        ['a port above 65535', 'tcp:0.0.0.0:65536', 'tcp:127.0.0.1:80'],
+        ['a non-numeric port', 'tcp:0.0.0.0:http', 'tcp:127.0.0.1:80'],
+        ['a negative port', 'tcp:0.0.0.0:-80', 'tcp:127.0.0.1:80'],
+        ['a fractional port', 'tcp:0.0.0.0:80.5', 'tcp:127.0.0.1:80'],
+        ['a reversed range', 'tcp:0.0.0.0:9000-8000', 'tcp:127.0.0.1:80'],
+        ['an open range', 'tcp:0.0.0.0:8000-', 'tcp:127.0.0.1:80'],
+        ['a range with a bad end', 'tcp:0.0.0.0:8000-70000', 'tcp:127.0.0.1:80'],
+        ['a comma list of ports', 'tcp:0.0.0.0:80,81', 'tcp:127.0.0.1:80'],
+        ['an empty string', '', 'tcp:127.0.0.1:80'],
+        ['a number', 80, 'tcp:127.0.0.1:80'],
+        ['null', null, 'tcp:127.0.0.1:80'],
+        ['a missing connect', 'tcp:0.0.0.0:80', undefined],
+        ['an object', { port: 80 }, 'tcp:127.0.0.1:80'],
+    ])('skips the device with %s without failing the decode', (_label, listen, connect) => {
+        const forwards = forwardsOf({
+            bad: proxy(listen, connect),
+            good: proxy('tcp:0.0.0.0:80', 'tcp:127.0.0.1:80'),
+        });
+        expect(forwards.map(f => f.listen.first)).toStrictEqual([80]);
+    });
+
+    it.each<[string, unknown]>([
+        ['null', null],
+        ['a string', 'proxy'],
+        ['an array', []],
+        ['a number', 3],
+    ])('gives no forwards, and no error, when expanded_devices is %s', (_label, devices) => {
+        const result = decodeInstances([instanceJson({ expanded_devices: devices })]);
+        expect(result.ok && result.value[0]?.forwards).toStrictEqual([]);
+    });
+
+    it.each<[string, unknown]>([
+        ['null', null],
+        ['a string', 'proxy'],
+        ['an array', ['proxy']],
+    ])('skips a device entry that is %s', (_label, entry) => {
+        expect(forwardsOf({ odd: entry })).toStrictEqual([]);
+    });
+
+    it('skips an entry whose type is not the string proxy', () => {
+        expect(forwardsOf({ a: proxy('tcp:0.0.0.0:1', 'tcp:127.0.0.1:1', { type: 7 }) })).toEqual(
+            [],
+        );
+    });
+
+    it('accepts the first and last valid ports', () => {
+        const [forward] = forwardsOf({ edge: proxy('tcp:0.0.0.0:1-65535', 'tcp:127.0.0.1:65535') });
+        expect([forward?.listen, forward?.connect]).toStrictEqual([
+            { first: 1, last: 65535 },
+            single(65535),
+        ]);
+    });
+
+    it('accepts a range of one port as a single port', () => {
+        const [forward] = forwardsOf({ one: proxy('tcp:0.0.0.0:80-80', 'tcp:127.0.0.1:80') });
+        expect(forward?.listen).toStrictEqual(single(80));
+    });
+
+    it('orders keys by code unit, so upper case sorts before lower case', () => {
+        const forwards = forwardsOf({
+            b: proxy('tcp:0.0.0.0:2', 'tcp:127.0.0.1:2'),
+            B: proxy('tcp:0.0.0.0:1', 'tcp:127.0.0.1:1'),
+            a: proxy('tcp:0.0.0.0:3', 'tcp:127.0.0.1:3'),
+        });
+        expect(forwards.map(f => f.listen.first)).toStrictEqual([1, 3, 2]);
+    });
+
+    it('keeps a bind=host device, whether bind is absent or the string host', () => {
+        const forwards = forwardsOf({
+            a: proxy('tcp:0.0.0.0:1', 'tcp:127.0.0.1:1'),
+            b: proxy('tcp:0.0.0.0:2', 'tcp:127.0.0.1:2', { bind: 'host' }),
+        });
+        expect(forwards.map(f => f.listen.first)).toStrictEqual([1, 2]);
+    });
+
+    // With bind=instance the listen side is inside the instance, so the line would be reversed.
+    it.each<[string, unknown]>([
+        ['instance', 'instance'],
+        ['container', 'container'],
+        ['an empty string', ''],
+        ['upper case Host', 'Host'],
+        ['null', null],
+        ['a number', 1],
+        ['an object', {}],
+    ])('skips a device whose bind is %s', (_label, bind) => {
+        const forwards = forwardsOf({
+            rev: proxy('tcp:0.0.0.0:5', 'tcp:127.0.0.1:5', { bind }),
+            good: proxy('tcp:0.0.0.0:80', 'tcp:127.0.0.1:80'),
+        });
+        expect(forwards.map(f => f.listen.first)).toStrictEqual([80]);
+    });
+
+    it('does not read an inherited bind', () => {
+        const entry = Object.assign(Object.create({ bind: 'instance' }) as Json, {
+            type: 'proxy',
+            listen: 'tcp:0.0.0.0:1',
+            connect: 'tcp:127.0.0.1:1',
+        });
+        expect(forwardsOf({ a: entry })).toHaveLength(1);
+    });
+
+    it('has no device field on a forward', () => {
+        const [forward] = forwardsOf({ web: proxy('tcp:0.0.0.0:1', 'tcp:127.0.0.1:1') });
+        expect(Object.keys(forward ?? {}).sort()).toStrictEqual(['connect', 'listen', 'protocol']);
+    });
+
+    // More devices than the cap never produce more forwards than the cap, and a hostile
+    // daemon sending a huge map costs little.
+    it('keeps at most 64 forwards however many valid devices there are', () => {
+        const devices: Record<string, unknown> = {};
+        for (let n = 0; n < 200; n++) {
+            devices[`d${String(1000 + n)}`] = proxy('tcp:0.0.0.0:80', 'tcp:127.0.0.1:80');
+        }
+        expect(forwardsOf(devices)).toHaveLength(64);
+    });
+
+    it('decodes 100000 devices in under 500 ms and keeps 64', () => {
+        const devices: Record<string, unknown> = {};
+        for (let n = 0; n < 100_000; n++) {
+            devices[`d${String(n)}`] = proxy('tcp:0.0.0.0:80', 'tcp:127.0.0.1:80');
+        }
+        const started = performance.now();
+        const forwards = forwardsOf(devices);
+        expect([forwards.length, performance.now() - started < 500]).toStrictEqual([64, true]);
+    });
+
+    it('treats __proto__ and constructor as ordinary device keys, sorted by key', () => {
+        const devices: unknown = JSON.parse(
+            '{"__proto__":{"type":"proxy","listen":"tcp:0.0.0.0:1","connect":"tcp:127.0.0.1:1"},' +
+                '"constructor":{"type":"proxy","listen":"tcp:0.0.0.0:2","connect":"tcp:127.0.0.1:2"}}',
+        );
+        const before = Object.getOwnPropertyNames(Object.prototype).sort();
+        const forwards = forwardsOf(devices);
+        expect(forwards.map(f => f.listen.first)).toStrictEqual([1, 2]);
+        expect(Object.getOwnPropertyNames(Object.prototype).sort()).toStrictEqual(before);
+    });
+
+    it('reads only own properties of a device, not inherited ones', () => {
+        const entry = Object.create({
+            type: 'proxy',
+            listen: 'tcp:0.0.0.0:1',
+            connect: 'tcp:127.0.0.1:1',
+        }) as unknown;
+        expect(forwardsOf({ inherited: entry })).toStrictEqual([]);
+    });
+
+    it('does not let an inherited expanded_devices key through', () => {
+        const raw = Object.assign(
+            Object.create({
+                expanded_devices: { web: proxy('tcp:0.0.0.0:1', 'tcp:127.0.0.1:1') },
+            }) as Json,
+            instanceJson({ expanded_devices: undefined }),
+        );
+        expect(decodeOne(raw).forwards).toStrictEqual([]);
+    });
+
+    it('decodes the recorded proxy-demo instance: tcp, udp and a range, without the unix listener', () => {
+        const result = decodeInstances(readFixture('6.0', 'instances-recursion1-proxy').metadata);
+        expect(result.ok && result.value.map(i => [i.name, i.status])).toStrictEqual([
+            ['proxy-demo', 'stopped'],
+        ]);
+        expect(result.ok && result.value[0]?.forwards).toStrictEqual([
+            {
+                protocol: 'tcp',
+                listen: { first: 8000, last: 8002 },
+                connect: { first: 9000, last: 9002 },
+            },
+            { protocol: 'udp', listen: single(5353), connect: single(53) },
+            { protocol: 'tcp', listen: single(18080), connect: single(80) },
         ]);
     });
 });

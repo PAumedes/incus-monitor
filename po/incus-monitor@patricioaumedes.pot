@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: incus-monitor@patricioaumedes\n"
 "Report-Msgid-Bugs-To: patricioaumedes@gmail.com\n"
-"POT-Creation-Date: 2026-10-06 23:33-0300\n"
+"POT-Creation-Date: 2026-10-07 00:04-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Patricio <patricioaumedes@gmail.com>\n"
 "Language-Team: \n"
@@ -93,6 +93,9 @@ msgid "Address"
 msgstr ""
 
 msgid "Uptime"
+msgstr ""
+
+msgid "Forwards"
 msgstr ""
 
 msgid "Retry"
@@ -187,6 +190,31 @@ msgstr ""
 #. Translators: {used} and {total} are sizes such as "246 MB" and "2.0 GB".
 msgid "{used} of {total}"
 msgstr ""
+
+#. Translators: a port range read aloud; {first} and {last} are port numbers such as "8000".
+msgid "{first} to {last}"
+msgstr ""
+
+#. Translators: read aloud, as in "TCP port 80 forwarded to 8080". {protocol} is TCP or
+#. UDP; the form follows the number of host ports.
+msgid "{protocol} port {listen} forwarded to {target}"
+msgid_plural "{protocol} ports {listen} forwarded to {target}"
+msgstr[0] ""
+msgstr[1] ""
+
+#. Translators: {count} is how many more port forwards exist than are listed. Both forms
+#. are identical on purpose: the count is a placeholder.
+msgid "+{count} more"
+msgid_plural "+{count} more"
+msgstr[0] ""
+msgstr[1] ""
+
+#. Translators: read aloud after the listed port forwards; {count} is how many more there
+#. are. Both forms are identical on purpose: the count is a placeholder.
+msgid "{count} more"
+msgid_plural "{count} more"
+msgstr[0] ""
+msgstr[1] ""
 
 #. Translators: {name} is an instance, {project} its Incus project, {status} its state.
 msgid "{name}, {project}, {status}"

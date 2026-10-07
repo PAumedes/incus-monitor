@@ -21,6 +21,7 @@ const instance = (name: string, status: InstanceStatus, project = 'default'): In
     type: 'container',
     status,
     state: null,
+    forwards: [],
 });
 
 interface Deferred<T> {

@@ -5,6 +5,7 @@ import type { IncusError } from '../../../src/core/errors.js';
 import { Formatter } from '../../../src/core/format.js';
 import type { InstanceAction } from '../../../src/core/incus/actions.js';
 import type {
+    Forward,
     Instance,
     InstanceRef,
     InstanceState,
@@ -58,6 +59,7 @@ function instance(overrides: Partial<Instance> = {}): Instance {
         type: 'container',
         status: 'running',
         state: RUNNING_STATE,
+        forwards: [],
         ...overrides,
     };
 }
@@ -866,5 +868,205 @@ describe('failureNotice', () => {
 
     it('gives nothing for a cancelled action', () => {
         expect(failureNotice('stop', 'web01', { kind: 'cancelled' }, translate)).toBeNull();
+    });
+});
+
+describe('present: forwards line', () => {
+    const forward = (
+        listen: number | [number, number],
+        connect: number | [number, number],
+        protocol: 'tcp' | 'udp' = 'tcp',
+    ): Forward => {
+        const range = (p: number | [number, number]) =>
+            typeof p === 'number' ? { first: p, last: p } : { first: p[0], last: p[1] };
+        return { protocol, listen: range(listen), connect: range(connect) };
+    };
+    const forwardsOf = (forwards: Forward[], overrides: Partial<PresentContext> = {}) =>
+        onlyRow(instance({ forwards }), overrides).forwards;
+
+    it('is null when the instance has no forwards', () => {
+        expect(onlyRow(instance()).forwards).toBeNull();
+    });
+
+    it('has no spoken form when the instance has no forwards', () => {
+        expect(onlyRow(instance()).forwardsSpoken).toBeNull();
+    });
+
+    it('shows one forward as protocol, listen port, an arrow and the target port', () => {
+        expect(forwardsOf([forward(18080, 80)])).toBe('tcp 18080 → 80');
+    });
+
+    it('shows a udp forward with its protocol', () => {
+        expect(forwardsOf([forward(5353, 53, 'udp')])).toBe('udp 5353 → 53');
+    });
+
+    it('shows ranges as first-last on each side', () => {
+        expect(forwardsOf([forward([8000, 8002], [9000, 9002])])).toBe('tcp 8000-8002 → 9000-9002');
+    });
+
+    it('shows a single port against a range', () => {
+        expect(forwardsOf([forward([8000, 8002], 80)])).toBe('tcp 8000-8002 → 80');
+    });
+
+    it('lists forwards in the order given, separated by commas', () => {
+        expect(forwardsOf([forward(1, 2), forward(3, 4, 'udp')])).toBe('tcp 1 → 2, udp 3 → 4');
+    });
+
+    it('shows exactly three forwards without a remainder', () => {
+        const items = [forward(1, 1), forward(2, 2), forward(3, 3)];
+        expect(forwardsOf(items)).toBe('tcp 1 → 1, tcp 2 → 2, tcp 3 → 3');
+    });
+
+    it('shows the first three and one more through ngettext when there are four', () => {
+        const items = [1, 2, 3, 4].map(n => forward(n, n));
+        expect(forwardsOf(items)).toBe('tcp 1 → 1, tcp 2 → 2, tcp 3 → 3, one:+1 more');
+    });
+
+    it('counts every hidden forward in the remainder', () => {
+        const items = [1, 2, 3, 4, 5, 6].map(n => forward(n, n));
+        expect(forwardsOf(items)).toBe('tcp 1 → 1, tcp 2 → 2, tcp 3 → 3, many:+3 more');
+    });
+
+    it('picks the plural form from the number of hidden forwards', () => {
+        const calls: number[] = [];
+        const spy = (singular: string, plural: string, n: number): string => {
+            if (singular.includes('more')) calls.push(n);
+            return ngettext(singular, plural, n);
+        };
+        const items = [1, 2, 3, 4, 5].map(n => forward(n, n));
+        forwardsOf(items, { ngettext: spy });
+        expect(calls).toContain(2);
+    });
+
+    it('asks ngettext only when something is hidden', () => {
+        const calls: number[] = [];
+        const spy = (singular: string, plural: string, n: number): string => {
+            if (singular.includes('more')) calls.push(n);
+            return ngettext(singular, plural, n);
+        };
+        forwardsOf([forward(1, 1)], { ngettext: spy });
+        expect(calls).not.toContain(0);
+    });
+
+    it('formats the ports with the locale digits', () => {
+        expect(forwardsOf([forward([8000, 8002], 80)], { locale: 'ar-EG' })).toBe(
+            'tcp ٨٠٠٠-٨٠٠٢ → ٨٠',
+        );
+    });
+
+    it('formats the hidden count with the locale digits', () => {
+        const items = [1, 2, 3, 4, 5].map(() => forward(1, 1));
+        expect(forwardsOf(items, { locale: 'ar-EG' })).toMatch(/many:\+٢ more$/);
+    });
+
+    it('passes the remainder template through ngettext with a count placeholder', () => {
+        const items = [1, 2, 3, 4].map(() => forward(1, 1));
+        const seen: string[] = [];
+        forwardsOf(items, {
+            ngettext: (singular, plural, n) => {
+                if (singular === '+{count} more') seen.push(singular, plural);
+                return ngettext(singular, plural, n);
+            },
+        });
+        expect(seen).toStrictEqual(['+{count} more', '+{count} more']);
+    });
+
+    it('does not run the protocol or ports through gettext', () => {
+        expect(forwardsOf([forward(80, 80)])).not.toContain('[');
+    });
+
+    it.each<InstanceStatus>(['running', 'stopped', 'frozen', 'busy', 'error', 'unknown'])(
+        'is shown for a %s instance, since it is configuration',
+        status => {
+            const row = onlyRow(instance({ status, state: null, forwards: [forward(80, 8080)] }));
+            expect(row.forwards).toBe('tcp 80 → 8080');
+        },
+    );
+
+    it('is shown for a stopped instance that has no details', () => {
+        const row = onlyRow(
+            instance({ status: 'stopped', state: null, forwards: [forward(80, 80)] }),
+        );
+        expect([row.details, row.forwards]).toStrictEqual([null, 'tcp 80 → 80']);
+    });
+
+    it('is the same text for equal forwards, so an unchanged row is not re-rendered', () => {
+        const a = forwardsOf([forward(80, 80)]);
+        const b = forwardsOf([forward(80, 80)]);
+        expect([a, b]).toStrictEqual(['tcp 80 → 80', 'tcp 80 → 80']);
+    });
+
+    it('changes when a port changes', () => {
+        expect(forwardsOf([forward(80, 80)])).not.toBe(forwardsOf([forward(81, 80)]));
+    });
+
+    describe('spoken form', () => {
+        const spoken = (forwards: Forward[], overrides: Partial<PresentContext> = {}) =>
+            onlyRow(instance({ forwards }), overrides).forwardsSpoken;
+
+        it('names the protocol in capitals and says port, singular, for one port', () => {
+            expect(spoken([forward(18080, 80)])).toBe('one:TCP port 18080 forwarded to 80');
+        });
+
+        it('says UDP for a udp forward', () => {
+            expect(spoken([forward(5353, 53, 'udp')])).toBe('one:UDP port 5353 forwarded to 53');
+        });
+
+        it('says ports, plural, and spells each range with a translated "to"', () => {
+            expect(spoken([forward([8000, 8002], [9000, 9002], 'udp')])).toBe(
+                'many:UDP ports [8000 to 8002] forwarded to [9000 to 9002]',
+            );
+        });
+
+        it('chooses the plural from the number of listening ports', () => {
+            const counts: number[] = [];
+            const spy = (singular: string, plural: string, n: number): string => {
+                if (singular.includes('forwarded')) counts.push(n);
+                return ngettext(singular, plural, n);
+            };
+            spoken([forward([8000, 8002], 80)], { ngettext: spy });
+            expect(counts).toStrictEqual([3]);
+        });
+
+        it('separates entries with commas', () => {
+            expect(spoken([forward(1, 2), forward(3, 4, 'udp')])).toBe(
+                'one:TCP port 1 forwarded to 2, one:UDP port 3 forwarded to 4',
+            );
+        });
+
+        it('caps at three entries and speaks the remainder as a translated count', () => {
+            const items = [1, 2, 3, 4, 5].map(n => forward(n, n));
+            expect(spoken(items)).toBe(
+                'one:TCP port 1 forwarded to 1, one:TCP port 2 forwarded to 2, ' +
+                    'one:TCP port 3 forwarded to 3, many:2 more',
+            );
+        });
+
+        it('speaks one hidden forward with the singular form', () => {
+            const items = [1, 2, 3, 4].map(n => forward(n, n));
+            expect(spoken(items)).toMatch(/, one:1 more$/);
+        });
+
+        it('uses locale digits for ports and the remainder', () => {
+            const items = [1, 2, 3, 4, 5].map(n => forward(8000 + n, 80));
+            expect(spoken(items, { locale: 'ar-EG' })).toMatch(
+                /^one:TCP port ٨٠٠١ forwarded to ٨٠,.*, many:٢ more$/,
+            );
+        });
+
+        it('passes the templates through gettext with placeholders', () => {
+            const seen: string[] = [];
+            const spy = (msgid: string): string => {
+                seen.push(msgid);
+                return msgid;
+            };
+            const items = [1, 2, 3, 4].map(n => forward([n, n + 1], n));
+            spoken(items, { translate: spy, ngettext: (s, p, n) => (n === 1 ? s : p) });
+            expect(seen).toContain('{first} to {last}');
+        });
+
+        it('is the same text for equal forwards', () => {
+            expect(spoken([forward(80, 80)])).toBe(spoken([forward(80, 80)]));
+        });
     });
 });

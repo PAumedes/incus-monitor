@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import { describe, expect, it } from 'vitest';
 
-import { fill, Formatter } from '../../../src/core/format.js';
+import { fill, Formatter, formatPort } from '../../../src/core/format.js';
 
 const identity = (msgid: string): string => msgid;
 const en = new Formatter('en', identity);
@@ -237,5 +237,21 @@ describe('fill', () => {
 
     it('does not read Object.prototype members as values', () => {
         expect(fill('{toString} {constructor}', {})).toBe('{toString} {constructor}');
+    });
+});
+
+describe('formatPort', () => {
+    it.each([
+        [1, 'en', '1'],
+        [80, 'en', '80'],
+        [18080, 'en', '18080'],
+        [65535, 'en', '65535'],
+        [65535, 'de', '65535'],
+        [65535, 'fr', '65535'],
+        [8080, 'ar-EG', '٨٠٨٠'],
+        [8080, 'en_US.UTF-8', '8080'],
+        [8080, 'C', '8080'],
+    ])('writes port %d for locale %s as %s, without a group separator', (port, locale, text) => {
+        expect(formatPort(port, locale)).toBe(text);
     });
 });

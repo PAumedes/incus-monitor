@@ -1,0 +1,137 @@
+{
+  "request": "/1.0/instances?all-projects=true&recursion=1",
+  "http_status": 200,
+  "body": {
+    "type": "sync",
+    "status": "Success",
+    "status_code": 200,
+    "operation": "",
+    "error_code": 0,
+    "error": "",
+    "metadata": [
+      {
+        "architecture": "x86_64",
+        "config": {
+          "image.architecture": "amd64",
+          "image.description": "Alpine edge amd64 (20261006_13:00)",
+          "image.os": "Alpine",
+          "image.release": "edge",
+          "image.requirements.secureboot": "false",
+          "image.serial": "20261006_13:00",
+          "image.type": "squashfs",
+          "image.variant": "default"
+        },
+        "devices": {
+          "rng": {
+            "connect": "tcp:127.0.0.1:9000-9002",
+            "listen": "tcp:0.0.0.0:8000-8002",
+            "type": "proxy"
+          },
+          "sock": {
+            "connect": "tcp:127.0.0.1:81",
+            "listen": "unix:/tmp/imon-probe.sock",
+            "type": "proxy"
+          },
+          "udp": {
+            "connect": "udp:127.0.0.1:53",
+            "listen": "udp:0.0.0.0:5353",
+            "type": "proxy"
+          },
+          "web": {
+            "connect": "tcp:127.0.0.1:80",
+            "listen": "tcp:127.0.0.1:18080",
+            "type": "proxy"
+          }
+        },
+        "ephemeral": false,
+        "profiles": [
+          "default"
+        ],
+        "stateful": false,
+        "description": "",
+        "created_at": "2026-10-07T02:46:11.983106699Z",
+        "expanded_config": {
+          "image.architecture": "amd64",
+          "image.description": "Alpine edge amd64 (20261006_13:00)",
+          "image.os": "Alpine",
+          "image.release": "edge",
+          "image.requirements.secureboot": "false",
+          "image.serial": "20261006_13:00",
+          "image.type": "squashfs",
+          "image.variant": "default",
+          "volatile.apply_template": "create",
+          "volatile.base_image": "f0b45900f25828d3ccfafcccf5c95d978656939e51e6581c9ace087269a4e4e9",
+          "volatile.cloud-init.instance-id": "bbb44bac-09ad-435b-b048-4ee9f61c8235",
+          "volatile.eth0.hwaddr": "10:66:6a:0f:d9:5c",
+          "volatile.idmap.base": "0",
+          "volatile.idmap.next": "[{\"Isuid\":true,\"Isgid\":false,\"Hostid\":1000000,\"Nsid\":0,\"Maprange\":1000000000},{\"Isuid\":false,\"Isgid\":true,\"Hostid\":1000000,\"Nsid\":0,\"Maprange\":1000000000}]",
+          "volatile.last_state.idmap": "[]",
+          "volatile.uuid": "44cce950-affc-4d2d-ae2f-ef2a1196b034",
+          "volatile.uuid.generation": "44cce950-affc-4d2d-ae2f-ef2a1196b034"
+        },
+        "expanded_devices": {
+          "eth0": {
+            "name": "eth0",
+            "network": "incusbr0",
+            "type": "nic"
+          },
+          "rng": {
+            "connect": "tcp:127.0.0.1:9000-9002",
+            "listen": "tcp:0.0.0.0:8000-8002",
+            "type": "proxy"
+          },
+          "root": {
+            "path": "/",
+            "pool": "default",
+            "type": "disk"
+          },
+          "sock": {
+            "connect": "tcp:127.0.0.1:81",
+            "listen": "unix:/tmp/imon-probe.sock",
+            "type": "proxy"
+          },
+          "udp": {
+            "connect": "udp:127.0.0.1:53",
+            "listen": "udp:0.0.0.0:5353",
+            "type": "proxy"
+          },
+          "web": {
+            "connect": "tcp:127.0.0.1:80",
+            "listen": "tcp:127.0.0.1:18080",
+            "type": "proxy"
+          }
+        },
+        "name": "proxy-demo",
+        "status": "Stopped",
+        "status_code": 102,
+        "last_used_at": "1970-01-01T00:00:00Z",
+        "location": "none",
+        "type": "container",
+        "project": "default",
+        "backups": null,
+        "state": {
+          "status": "Stopped",
+          "status_code": 102,
+          "disk": {},
+          "memory": {
+            "usage": 0,
+            "usage_peak": 0,
+            "total": 0,
+            "swap_usage": 0,
+            "swap_usage_peak": 0
+          },
+          "network": null,
+          "pid": 0,
+          "processes": 0,
+          "cpu": {
+            "usage": 0,
+            "allocated_time": 0
+          },
+          "started_at": "0001-01-01T00:00:00Z",
+          "os_info": null
+        },
+        "snapshots": null
+      }
+    ]
+  }
+}
