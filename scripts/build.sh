@@ -4,7 +4,9 @@
 # dist/ is the single source for every package format (zip, .deb, PPA).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/lib/ui.sh
 
+ui_step "Building dist/"
 rm -rf dist
 npx tsc -p tsconfig.json
 
@@ -23,4 +25,4 @@ while read -r lang; do
     msgfmt --check --output-file="dist/locale/$lang/LC_MESSAGES/$domain.mo" "po/$lang.po"
 done <po/LINGUAS
 
-echo "Built dist/"
+ui_ok "Built dist/"

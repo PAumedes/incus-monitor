@@ -8,11 +8,12 @@
 # needs: debhelper and a GPG key registered on Launchpad (DEBSIGN_KEYID selects it).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/lib/ui.sh
 
 declare -A releases=([noble]=24.04 [resolute]=26.04)
 series=${1:-}
-[[ -n ${releases[$series]:-} ]] || { echo "usage: $0 <${!releases[*]}>" >&2; exit 2; }
-[[ -f dist/metadata.json ]] || { echo "dist/ is missing: run 'make build' first" >&2; exit 1; }
+[[ -n ${releases[$series]:-} ]] || { ui_fail "usage: $0 <${!releases[*]}>"; exit 2; }
+[[ -f dist/metadata.json ]] || { ui_fail "dist/ is missing: run 'make build' first"; exit 1; }
 
 base=$(dpkg-parsechangelog --show-field Version)
 version="$base~${releases[$series]}.1"
@@ -37,5 +38,5 @@ mkdir -p build/ppa
 mv "$staging"/*.{dsc,tar.*,buildinfo,changes} build/ppa/
 rm -rf "$staging"
 
-echo "Source package: build/ppa/"
-echo "Upload with:    dput ppa:<owner>/<ppa> build/ppa/*_${version}_source.changes"
+ui_ok "Source package: build/ppa/"
+ui_info "Upload with: dput ppa:<owner>/<ppa> build/ppa/*_${version}_source.changes"
