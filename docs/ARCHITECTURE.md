@@ -82,7 +82,7 @@ src/
 │   ├── monitor.ts          State machine + scheduling (idle/slow vs open/fast cadence, back-off), compat check, socket discovery re-run, `perform`.
 │   └── presenter.ts        Snapshot → ViewModel (sorting, labels, available actions, empty/error states).
 ├── adapters/
-│   ├── gio-transport.ts    Transport over Gio.SocketClient + Gio.UnixSocketAddress, cancellable.
+│   ├── gio-transport.ts    Transport over Gio.SocketClient + Gio.UnixSocketAddress, cancellable; its connect and request deadlines run on the injected Clock.
 │   ├── glib-delay.ts       Clamps delays to what GLib timeouts accept.
 │   ├── glib-clock.ts       Clock over GLib.timeout_add; every source is tracked and removable.
 │   ├── settings.ts         Typed GSettings wrapper with change subscription.

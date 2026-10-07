@@ -141,7 +141,7 @@ export default class IncusMonitorExtension extends Extension {
 
     #createMonitor(session: Session): Monitor {
         return new Monitor({
-            connect: path => new IncusClient(new GioTransport(path)),
+            connect: path => new IncusClient(new GioTransport(path, session.clock)),
             probe: session.probe,
             clock: session.clock,
             settings: monitorSettings(session.settings, name => GLib.getenv(name)),

@@ -5,10 +5,9 @@ import GLib from 'gi://GLib';
 import type { IncusError } from '../core/errors.js';
 import { encodeRequest, type HttpRequest } from '../core/http/request.js';
 import { ResponseParser, type HttpResponse } from '../core/http/response.js';
-import type { Transport } from '../core/ports.js';
+import type { Clock, Transport } from '../core/ports.js';
 import { err, ok, type Result } from '../core/result.js';
 import type { CancelSignal } from '../core/cancel.js';
-import { clampDelayMs } from './glib-delay.js';
 import { isIOError } from './io-error.js';
 
 Gio._promisify(Gio.SocketClient.prototype, 'connect_async', 'connect_finish');
@@ -41,27 +40,6 @@ export interface GioTransportOptions {
 // main-loop dispatch.
 const MAX_READ_BYTES = 64 * 1024;
 
-/** One timer at a time; expiring marks the exchange as timed out and aborts the pending I/O. */
-class Deadline {
-    expired = false;
-    #source = 0;
-
-    start(ms: number, onExpire: () => void): void {
-        this.stop();
-        this.#source = GLib.timeout_add(GLib.PRIORITY_DEFAULT, clampDelayMs(ms), () => {
-            this.#source = 0;
-            this.expired = true;
-            onExpire();
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
-    stop(): void {
-        if (this.#source !== 0) GLib.Source.remove(this.#source);
-        this.#source = 0;
-    }
-}
-
 type PlainFailure = Extract<
     IncusError,
     { kind: 'not-installed' | 'permission-denied' | 'unreachable' | 'timeout' | 'cancelled' }
@@ -72,11 +50,13 @@ const failure = (kind: PlainFailure['kind']) => err<IncusError>({ kind });
 /** HTTP over a unix socket, one connection per request (`Connection: close`). */
 export class GioTransport implements Transport {
     readonly #path: string;
+    readonly #clock: Clock;
     readonly #timeouts: TransportTimeouts;
     readonly #onRead: ((bytes: number) => void) | undefined;
 
-    constructor(socketPath: string, options: GioTransportOptions = {}) {
+    constructor(socketPath: string, clock: Clock, options: GioTransportOptions = {}) {
         this.#path = socketPath;
+        this.#clock = clock;
         this.#timeouts = { ...TRANSPORT_TIMEOUTS, ...options.timeouts };
         this.#onRead = options.onRead;
     }
@@ -97,24 +77,30 @@ export class GioTransport implements Transport {
         const off = signal.onCancel(() => {
             cancellable.cancel();
         });
-        const deadline = new Deadline();
-        const abort = (): void => {
-            cancellable.cancel();
+        // One timer at a time; expiring marks the exchange as timed out and aborts the pending I/O.
+        let expired = false;
+        let stopTimer = (): void => undefined;
+        const arm = (ms: number): void => {
+            stopTimer();
+            stopTimer = this.#clock.setTimeout(ms, () => {
+                expired = true;
+                cancellable.cancel();
+            });
         };
         let connection: Gio.SocketConnection | undefined;
         try {
-            deadline.start(this.#timeouts.connectMs, abort);
+            arm(this.#timeouts.connectMs);
             connection = await new Gio.SocketClient().connect_async(
                 Gio.UnixSocketAddress.new(this.#path),
                 cancellable,
             );
-            deadline.start(request.timeoutMs ?? this.#timeouts.requestMs, abort);
+            arm(request.timeoutMs ?? this.#timeouts.requestMs);
             await write(connection.get_output_stream(), encoded, cancellable);
             return await this.#readResponse(connection.get_input_stream(), cancellable);
         } catch (error) {
-            return this.#classify(error, deadline, cancellable);
+            return this.#classify(error, expired, cancellable);
         } finally {
-            deadline.stop();
+            stopTimer();
             off();
             // Fire-and-forget on purpose: awaiting would delay the result, and a close error
             // cannot change an answer already in hand. The connection is unreferenced here, so
@@ -144,10 +130,10 @@ export class GioTransport implements Transport {
 
     #classify(
         error: unknown,
-        deadline: Deadline,
+        expired: boolean,
         cancellable: Gio.Cancellable,
     ): Result<never, IncusError> {
-        if (deadline.expired) return failure('timeout');
+        if (expired) return failure('timeout');
         if (cancellable.is_cancelled()) return failure('cancelled');
         if (isIOError(error, Gio.IOErrorEnum.NOT_FOUND)) return failure('not-installed');
         if (isIOError(error, Gio.IOErrorEnum.PERMISSION_DENIED))

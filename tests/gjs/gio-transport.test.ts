@@ -11,7 +11,12 @@
 // delay of the GLib source the transport arms instead.
 import GLib from 'gi://GLib';
 
-import { GioTransport, TRANSPORT_TIMEOUTS } from '../../src/adapters/gio-transport.js';
+import {
+    GioTransport,
+    TRANSPORT_TIMEOUTS,
+    type GioTransportOptions,
+} from '../../src/adapters/gio-transport.js';
+import { GLibClock } from '../../src/adapters/glib-clock.js';
 import { CancelSource } from '../../src/core/cancel.js';
 import type { IncusError } from '../../src/core/errors.js';
 import type { HttpRequest } from '../../src/core/http/request.js';
@@ -30,6 +35,9 @@ import {
 } from './support.js';
 
 const testUnlessRoot = testSkipIf(RUNNING_AS_ROOT, 'running as root, permissions are not enforced');
+
+const newTransport = (path: string, options?: GioTransportOptions): GioTransport =>
+    new GioTransport(path, new GLibClock(), options);
 
 const GET_LIST: HttpRequest = { method: 'GET', path: '/1.0/instances' };
 const JSON_OK = '{"type":"sync","status":"Success","status_code":200,"metadata":[]}';
@@ -75,10 +83,7 @@ test('transport: the default timeouts are exactly a connect and a request deadli
 
 test('transport: returns status, headers and body of a successful response', () =>
     withServer(answer(response(JSON_OK)), async server => {
-        const result = await new GioTransport(server.path).request(
-            GET_LIST,
-            new CancelSource().signal,
-        );
+        const result = await newTransport(server.path).request(GET_LIST, new CancelSource().signal);
         assert.ok(result.ok);
         assert.equal(result.value.status, 200);
         assert.equal(result.value.headers.get('content-type'), 'application/json');
@@ -93,7 +98,7 @@ test('transport: sends the encoded request, including a JSON body', () => {
             await peer.write(response(JSON_OK));
         },
         async server => {
-            await new GioTransport(server.path).request(
+            await newTransport(server.path).request(
                 {
                     method: 'PUT',
                     path: '/1.0/instances/web/state?project=default',
@@ -116,7 +121,7 @@ test('transport: decodes a chunked response split across writes', () =>
             await peer.write('lo\r\n6\r\n world\r\n0\r\n\r\n');
         },
         async server => {
-            const result = await new GioTransport(server.path).request(
+            const result = await newTransport(server.path).request(
                 GET_LIST,
                 new CancelSource().signal,
             );
@@ -127,10 +132,7 @@ test('transport: decodes a chunked response split across writes', () =>
 
 test('transport: a read-to-EOF body completes when the server closes', () =>
     withServer(answer('HTTP/1.1 200 OK\r\nConnection: close\r\n\r\nuntil eof'), async server => {
-        const result = await new GioTransport(server.path).request(
-            GET_LIST,
-            new CancelSource().signal,
-        );
+        const result = await newTransport(server.path).request(GET_LIST, new CancelSource().signal);
         assert.ok(result.ok);
         assert.equal(text(result.value.body), 'until eof');
     }));
@@ -139,7 +141,7 @@ test('transport: a 1 MiB body arrives intact in reads of at most 64 KiB', () => 
     const big = `[${'"x",'.repeat(262143)}"x"]`;
     const reads: number[] = [];
     return withServer(answer(response(big)), async server => {
-        const result = await new GioTransport(server.path, {
+        const result = await newTransport(server.path, {
             onRead: bytes => reads.push(bytes),
         }).request(GET_LIST, new CancelSource().signal);
         assert.ok(result.ok);
@@ -157,7 +159,7 @@ test('transport: an API error status is a response, not a transport error', () =
     withServer(
         answer(response('{"type":"error","error_code":404}', '404 Not Found')),
         async server => {
-            const result = await new GioTransport(server.path).request(
+            const result = await newTransport(server.path).request(
                 GET_LIST,
                 new CancelSource().signal,
             );
@@ -168,7 +170,7 @@ test('transport: an API error status is a response, not a transport error', () =
 
 test('transport: a stalled server yields timeout after the request deadline', () =>
     withServer(stall, async server => {
-        const result = await new GioTransport(server.path, {
+        const result = await newTransport(server.path, {
             timeouts: { requestMs: 150 },
         }).request(GET_LIST, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'timeout');
@@ -185,7 +187,7 @@ test('transport: the request deadline is total, so a slow drip cannot extend it'
             }
         },
         async server => {
-            const result = await new GioTransport(server.path, {
+            const result = await newTransport(server.path, {
                 timeouts: { requestMs: 200 },
             }).request(GET_LIST, new CancelSource().signal);
             assert.equal(timeoutKind(result), 'timeout');
@@ -201,7 +203,7 @@ const slowAnswer: Script = async peer => {
 
 test('transport: a request with its own timeoutMs succeeds at a delay above requestMs', () =>
     withServer(slowAnswer, async server => {
-        const result = await new GioTransport(server.path, {
+        const result = await newTransport(server.path, {
             timeouts: { requestMs: 100 },
         }).request({ ...GET_LIST, timeoutMs: 3000 }, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'ok');
@@ -209,7 +211,7 @@ test('transport: a request with its own timeoutMs succeeds at a delay above requ
 
 test('transport: the same delay without timeoutMs times out', () =>
     withServer(slowAnswer, async server => {
-        const result = await new GioTransport(server.path, {
+        const result = await newTransport(server.path, {
             timeouts: { requestMs: 100 },
         }).request(GET_LIST, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'timeout');
@@ -217,7 +219,7 @@ test('transport: the same delay without timeoutMs times out', () =>
 
 test('transport: a request timeoutMs that is exceeded times out', () =>
     withServer(stall, async server => {
-        const result = await new GioTransport(server.path, {
+        const result = await newTransport(server.path, {
             timeouts: { requestMs: 5000 },
         }).request({ ...GET_LIST, timeoutMs: 150 }, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'timeout');
@@ -229,7 +231,7 @@ test('transport: the transport has no special case for any path', () =>
             method: 'GET',
             path: '/1.0/operations/6b3e0fd0-1c7a-4c3e-8d2f-0d3d6b9f2f11/wait?timeout=60',
         };
-        const result = await new GioTransport(server.path, {
+        const result = await newTransport(server.path, {
             timeouts: { requestMs: 100 },
         }).request(wait, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'timeout');
@@ -238,7 +240,7 @@ test('transport: the transport has no special case for any path', () =>
 test('transport: arms the connect deadline first, then requestMs or the request timeoutMs', () =>
     withServer(answer(response(JSON_OK)), async server => {
         const timeouts = { connectMs: 111, requestMs: 222 };
-        const transport = new GioTransport(server.path, { timeouts });
+        const transport = newTransport(server.path, { timeouts });
         await trackingSources(async tracker => {
             await transport.request(GET_LIST, new CancelSource().signal);
             assert.deepEqual(tracker.intervals, [111, 222]);
@@ -249,11 +251,38 @@ test('transport: arms the connect deadline first, then requestMs or the request 
         });
     }));
 
+test('transport: no timer outlives a request, whether it succeeds, times out or is cancelled', () =>
+    withServer(stall, async server => {
+        const transport = newTransport(server.path, { timeouts: { requestMs: 100 } });
+        await trackingSources(async tracker => {
+            const source = new CancelSource();
+            const pending = transport.request(GET_LIST, source.signal);
+            await connected(server);
+            source.cancel();
+            assert.equal(timeoutKind(await pending), 'cancelled');
+            assert.equal(tracker.live(), 0, 'after cancel');
+        });
+        await trackingSources(async tracker => {
+            const result = await transport.request(GET_LIST, new CancelSource().signal);
+            assert.equal(timeoutKind(result), 'timeout');
+            assert.equal(tracker.live(), 0, 'after timeout');
+            assert.deepEqual(tracker.removed.length, 1, 'only the connect timer is removed');
+        });
+    }));
+
+test('transport: the timer is removed after a success', () =>
+    withServer(answer(response(JSON_OK)), async server => {
+        await trackingSources(async tracker => {
+            await newTransport(server.path).request(GET_LIST, new CancelSource().signal);
+            assert.equal(tracker.live(), 0);
+        });
+    }));
+
 // A request timeoutMs outside what GLib accepts is clamped like GLibClock does: to
 // [0, 2**31-1], with NaN as 0. It is never passed on raw, where a guint would wrap.
 test('transport: a request timeoutMs outside the GLib range is clamped, never raw', () =>
     withServer(answer(response(JSON_OK)), async server => {
-        const transport = new GioTransport(server.path, { timeouts: { connectMs: 111 } });
+        const transport = newTransport(server.path, { timeouts: { connectMs: 111 } });
         const expected: [number, number][] = [
             [-1, 0],
             [NaN, 0],
@@ -272,7 +301,7 @@ test('transport: a request timeoutMs outside the GLib range is clamped, never ra
 
 test('transport: a degenerate request timeoutMs yields a timeout or a success, and logs nothing', () =>
     withServer(answer(response(JSON_OK)), async server => {
-        const transport = new GioTransport(server.path);
+        const transport = newTransport(server.path);
         const warnings = await collectingWarnings(async () => {
             for (const timeoutMs of [-1, NaN, 0, 2 ** 32]) {
                 const result = await transport.request(
@@ -297,7 +326,7 @@ test('transport: the connection closing mid-body is a protocol error', () =>
             await peer.write('HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nshort');
         },
         async server => {
-            const result = await new GioTransport(server.path).request(
+            const result = await newTransport(server.path).request(
                 GET_LIST,
                 new CancelSource().signal,
             );
@@ -312,7 +341,7 @@ test('transport: the connection closing before any response byte is a protocol e
             await peer.readRequest();
         },
         async server => {
-            const result = await new GioTransport(server.path).request(
+            const result = await newTransport(server.path).request(
                 GET_LIST,
                 new CancelSource().signal,
             );
@@ -322,16 +351,13 @@ test('transport: the connection closing before any response byte is a protocol e
 
 test('transport: garbage instead of HTTP is a protocol error', () =>
     withServer(answer('not http at all\r\n\r\n'), async server => {
-        const result = await new GioTransport(server.path).request(
-            GET_LIST,
-            new CancelSource().signal,
-        );
+        const result = await newTransport(server.path).request(GET_LIST, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'protocol');
     }));
 
 test('transport: a missing socket file is not-installed', () =>
     withTempDir(async dir => {
-        const result = await new GioTransport(`${dir}/absent.socket`).request(
+        const result = await newTransport(`${dir}/absent.socket`).request(
             GET_LIST,
             new CancelSource().signal,
         );
@@ -339,7 +365,7 @@ test('transport: a missing socket file is not-installed', () =>
     }));
 
 test('transport: a missing parent directory is not-installed', async () => {
-    const result = await new GioTransport('/nonexistent-incus-dir/unix.socket').request(
+    const result = await newTransport('/nonexistent-incus-dir/unix.socket').request(
         GET_LIST,
         new CancelSource().signal,
     );
@@ -349,10 +375,7 @@ test('transport: a missing parent directory is not-installed', async () => {
 testUnlessRoot('transport: a socket the user may not open is permission-denied', () =>
     withServer(answer(response(JSON_OK)), async (server, dir) => {
         GLib.chmod(`${dir}/unix.socket`, 0o000);
-        const result = await new GioTransport(server.path).request(
-            GET_LIST,
-            new CancelSource().signal,
-        );
+        const result = await newTransport(server.path).request(GET_LIST, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'permission-denied');
         assert.equal(server.connections, 0);
     }),
@@ -361,16 +384,13 @@ testUnlessRoot('transport: a socket the user may not open is permission-denied',
 test('transport: a socket file with no listener is unreachable', () =>
     withServer(answer(response(JSON_OK)), async server => {
         server.stop();
-        const result = await new GioTransport(server.path).request(
-            GET_LIST,
-            new CancelSource().signal,
-        );
+        const result = await newTransport(server.path).request(GET_LIST, new CancelSource().signal);
         assert.equal(timeoutKind(result), 'unreachable');
     }));
 
 test('transport: an unencodable request is a protocol error and never connects', () =>
     withServer(answer(response(JSON_OK)), async server => {
-        const result = await new GioTransport(server.path).request(
+        const result = await newTransport(server.path).request(
             { method: 'GET', path: 'no-leading-slash' },
             new CancelSource().signal,
         );
@@ -382,7 +402,7 @@ test('transport: an already cancelled signal is cancelled without connecting', (
     withServer(answer(response(JSON_OK)), async server => {
         const source = new CancelSource();
         source.cancel();
-        const result = await new GioTransport(server.path).request(GET_LIST, source.signal);
+        const result = await newTransport(server.path).request(GET_LIST, source.signal);
         assert.equal(timeoutKind(result), 'cancelled');
         assert.equal(server.connections, 0);
     }));
@@ -390,7 +410,7 @@ test('transport: an already cancelled signal is cancelled without connecting', (
 test('transport: cancelling during connect is cancelled', () =>
     withServer(answer(response(JSON_OK)), async server => {
         const source = new CancelSource();
-        const pending = new GioTransport(server.path).request(GET_LIST, source.signal);
+        const pending = newTransport(server.path).request(GET_LIST, source.signal);
         source.cancel();
         assert.equal(timeoutKind(await pending), 'cancelled');
     }));
@@ -398,7 +418,7 @@ test('transport: cancelling during connect is cancelled', () =>
 test('transport: cancelling while waiting for the response is cancelled', () =>
     withServer(stall, async server => {
         const source = new CancelSource();
-        const pending = new GioTransport(server.path).request(GET_LIST, source.signal);
+        const pending = newTransport(server.path).request(GET_LIST, source.signal);
         await connected(server);
         source.cancel();
         assert.equal(timeoutKind(await pending), 'cancelled');
@@ -412,7 +432,7 @@ test('transport: cancelling a write the server never drains is cancelled', () =>
         async server => {
             const source = new CancelSource();
             const body = { padding: 'x'.repeat(16 * 1024 * 1024) };
-            const pending = new GioTransport(server.path).request(
+            const pending = newTransport(server.path).request(
                 { method: 'PUT', path: '/1.0/instances/web/state', body },
                 source.signal,
             );
@@ -432,7 +452,7 @@ test('transport: cancelling mid-body is cancelled', () =>
         async server => {
             const source = new CancelSource();
             let received = 0;
-            const pending = new GioTransport(server.path, {
+            const pending = newTransport(server.path, {
                 onRead: bytes => (received += bytes),
             }).request(GET_LIST, source.signal);
             await eventually(() => (received > 0 ? true : undefined));
@@ -444,7 +464,7 @@ test('transport: cancelling mid-body is cancelled', () =>
 test('transport: the onCancel registration is removed after a success', () =>
     withServer(answer(response(JSON_OK)), async server => {
         const signal = new CountingSignal();
-        const result = await new GioTransport(server.path).request(GET_LIST, signal);
+        const result = await newTransport(server.path).request(GET_LIST, signal);
         assert.ok(result.ok);
         assert.ok(signal.registrations >= 1, 'the transport must observe cancellation');
         assert.equal(signal.active, 0);
@@ -453,17 +473,11 @@ test('transport: the onCancel registration is removed after a success', () =>
 test('transport: the onCancel registration is removed after each failure kind', async () => {
     const signal = new CountingSignal();
     await withTempDir(async dir => {
-        await new GioTransport(`${dir}/absent.socket`).request(GET_LIST, signal);
+        await newTransport(`${dir}/absent.socket`).request(GET_LIST, signal);
     });
-    await new GioTransport('/nonexistent-incus-dir/x').request(
-        { method: 'GET', path: 'bad' },
-        signal,
-    );
+    await newTransport('/nonexistent-incus-dir/x').request({ method: 'GET', path: 'bad' }, signal);
     await withServer(stall, async server => {
-        await new GioTransport(server.path, { timeouts: { requestMs: 100 } }).request(
-            GET_LIST,
-            signal,
-        );
+        await newTransport(server.path, { timeouts: { requestMs: 100 } }).request(GET_LIST, signal);
     });
     assert.equal(signal.active, 0);
 });
@@ -471,7 +485,7 @@ test('transport: the onCancel registration is removed after each failure kind', 
 test('transport: many sequential requests on one signal leave no registrations behind', () =>
     withServer(answer(response(JSON_OK)), async server => {
         const signal = new CountingSignal();
-        const transport = new GioTransport(server.path);
+        const transport = newTransport(server.path);
         for (let i = 0; i < 5; i++) await transport.request(GET_LIST, signal);
         assert.equal(signal.active, 0);
     }));
@@ -487,7 +501,7 @@ test('transport: a 4 MiB request body reaches a slow-reading server byte-complet
             await peer.write(response(JSON_OK));
         },
         async server => {
-            const result = await new GioTransport(server.path).request(
+            const result = await newTransport(server.path).request(
                 { method: 'PUT', path: '/1.0/instances/web/state', body: { padding } },
                 new CancelSource().signal,
             );
@@ -510,7 +524,7 @@ for (const [name, script] of SOURCE_SCENARIOS) {
         withServer(script, async server => {
             await trackingSources(async tracker => {
                 const source = new CancelSource();
-                const pending = new GioTransport(server.path, {
+                const pending = newTransport(server.path, {
                     timeouts: { connectMs: 150, requestMs: 150 },
                 }).request(GET_LIST, source.signal);
                 if (name === 'a cancellation') {
@@ -526,7 +540,7 @@ for (const [name, script] of SOURCE_SCENARIOS) {
 test('transport: no timer source outlives a request that fails to connect', () =>
     withTempDir(async dir => {
         await trackingSources(async tracker => {
-            await new GioTransport(`${dir}/absent.socket`, {
+            await newTransport(`${dir}/absent.socket`, {
                 timeouts: { connectMs: 150, requestMs: 150 },
             }).request(GET_LIST, new CancelSource().signal);
             assert.equal(tracker.live(), 0);
@@ -549,7 +563,7 @@ for (const [name, reply] of CLOSING_SCENARIOS) {
                 eof++;
             },
             async server => {
-                await new GioTransport(server.path, { timeouts: { requestMs: 150 } }).request(
+                await newTransport(server.path, { timeouts: { requestMs: 150 } }).request(
                     GET_LIST,
                     new CancelSource().signal,
                 );
